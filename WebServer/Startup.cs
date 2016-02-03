@@ -61,8 +61,8 @@ _logger.LogInformation("Starting Jacks logging");
                     template: "{controller=Home}/{action=Index}/{id?}");
             });
 
-	    DownloaderLib.Downloader.Instance.AddLogger(_logger);
-	    DownloaderLib.Downloader.Instance.Go("http://kinoman.tv/film/karbala-2");
+	    DownloaderUtil.Downloader.Instance.AddLogger(_logger);
+	    DownloaderUtil.Downloader.Instance.Go("http://kinoman.tv/film/karbala-2");
         }
 
         // Entry point for the application.
