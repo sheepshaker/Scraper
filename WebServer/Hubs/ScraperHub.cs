@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using System.Web;
 using Microsoft.AspNet.SignalR;
 
-namespace Scraper
+namespace Scraper.Hubs
 {
     public class ChatHub : Hub
     {

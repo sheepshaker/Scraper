@@ -13,6 +13,7 @@ namespace Scraper
     public class Startup
     {
 	ILogger _logger;
+	DownloaderUtil.Downloader _downloader;
 
         public Startup(IHostingEnvironment env)
         {
@@ -38,8 +39,7 @@ namespace Scraper
             loggerFactory.AddConsole(Configuration.GetSection("Logging"));
             loggerFactory.AddDebug();
 	    _logger = loggerFactory.CreateLogger("Test");
-	    //logger.LogDebug("This is Jack's debug statement.");
-_logger.LogInformation("Starting Jacks logging");
+	    _logger.LogInformation("Starting Jacks logging");
             
 	    if (env.IsDevelopment())
             {
@@ -53,15 +53,19 @@ _logger.LogInformation("Starting Jacks logging");
             app.UseIISPlatformHandler();
 
             app.UseStaticFiles();
-app.UseSignalR2();
+	    app.UseSignalR2();
             app.UseMvc(routes =>
             {
                 routes.MapRoute(
                     name: "default",
                     template: "{controller=Home}/{action=Index}/{id?}");
             });
-
-	    DownloaderUtil.Downloader.Instance.AddLogger(_logger);
+	    
+	    _downloader = DownloaderUtil.Downloader.Instance;
+	    _downloader.WebDriverProgress += (s,e) => { _logger.LogInformation(e.Message); };
+	    _downloader.WebDriverError += (s,e) => { _logger.LogError(e.Message); };
+	    _downloader.DownloaderProgress += (s,e) => { _logger.LogInformation("Progress"); };
+	    _downloader.DownloaderError += (s,e) => { _logger.LogError(e.Message); };
 	    DownloaderUtil.Downloader.Instance.Go("http://kinoman.tv/film/karbala-2");
         }
 

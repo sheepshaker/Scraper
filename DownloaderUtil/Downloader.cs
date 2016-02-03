@@ -11,9 +11,21 @@ namespace DownloaderUtil
 {
     public sealed class Downloader
     {
+	public event EventHandler<MessageEventArgs> WebDriverProgress;
+	public event EventHandler<MessageEventArgs> WebDriverError;
+	public event EventHandler<DownloaderEventArgs> DownloaderProgress;
+	public event EventHandler<MessageEventArgs> DownloaderError;
+
+	IWebDriver _driver;
+	
 	private Downloader()
 	{
+	    var service = PhantomJSDriverService.CreateDefaultService();
+	    var options = new PhantomJSOptions();
+	    	
+	    _driver = new PhantomJSDriver(service, options, TimeSpan.FromSeconds(30));
 	}
+
 	public static Downloader Instance { get { return Nested.instance; } }
     
 	private class Nested
@@ -26,123 +38,106 @@ namespace DownloaderUtil
     	    internal static readonly Downloader instance = new Downloader();
 	}
 
-	private ILogger _logger;
-
-	public void AddLogger(ILogger logger)
-	{
-	    _logger = logger;
-	}
-
         public void Go(string downloadUrl)
         {
-	    WriteDebug("Scraping url: " + downloadUrl);
+	    if(_driver == null)
+	    {
+		SendProgress("Driver is null!");
+		
+		throw new Exception();
+	    }
 	    
-            IWebDriver driver = null;
+	    SendProgress("Scraping url: " + downloadUrl);
+	        
             string linkLocation = string.Empty;
             DateTime startTime = DateTime.Now;
 
             try
             {
-		var service = PhantomJSDriverService.CreateDefaultService();
-		WriteDebug("service OK: " + (service!=null).ToString());
-		var options = new PhantomJSOptions();
-		WriteDebug("options OK: " + (options!=null).ToString());
-		
-                driver = new PhantomJSDriver(service, options, TimeSpan.FromSeconds(30));
-                //driver = new FirefoxDriver(new FirefoxBinary(), new FirefoxProfile(), TimeSpan.FromMinutes(3));
 
-
-                WriteDebug("Navigating...");
-                driver.Navigate().GoToUrl(downloadUrl);
-                //driver.Navigate().GoToUrl("http://localhost/temp2.html");
-
-                //driver.Navigate().GoToUrl("http://www.kinoman.tv/film/gesia-skorka-1");
-
-                //driver.Navigate().GoToUrl("http://www.kinoman.tv/film/pakt-z-diablem");
-                //driver.Navigate().GoToUrl("http://localhost/temp3.html");
-
+                SendProgress("Navigating...");
+                _driver.Navigate().GoToUrl(downloadUrl);
+                
                 try
                 {
-                    //IWebElement query = driver.FindElement(By.LinkText("OglÄdaj film z limitem."));
-                    IWebElement query = driver.FindElement(By.XPath("//div[@class='player-wrapper']/a"));
-                    WriteDebug("Click 1");
+                    IWebElement query = _driver.FindElement(By.XPath("//div[@class='player-wrapper']/a"));
+                    SendProgress("Click 1");
                     query.Click();
-                    WriteDebug("OK");
-                    //Thread.Sleep(TimeSpan.FromSeconds(10));
+                    SendProgress("OK");
                 }
                 catch (Exception ex)
                 {
-                    WriteDebug("Error1", ex.ToString(), driver?.PageSource);
+                    SendError("Error1", ex.ToString(), _driver?.PageSource);
                 }
 
-                WebDriverWait wait = new WebDriverWait(driver, TimeSpan.FromSeconds(10));
+                WebDriverWait wait = new WebDriverWait(_driver, TimeSpan.FromSeconds(10));
                 var element = wait.Until((d) => { return d.FindElement(By.XPath("//button[@class='btn btn-primary']")); });
 
                 try
                 {
-                    WriteDebug("Click 2");
+                    SendProgress("Click 2");
                     //var html = element.GetAttribute("outerHTML");
                     //html = element.GetAttribute("innerHTML");
                     element.Click();
-                    WriteDebug("OK");
+                    SendProgress("OK");
                 }
                 catch (Exception ex)
                 {
-                    WriteDebug("Warning", ex.ToString(), driver?.PageSource);
+                    SendError("Warning", ex.ToString(), _driver?.PageSource);
                 }
 
                 try
                 {
-                    wait = new WebDriverWait(driver, TimeSpan.FromSeconds(10));
+                    wait = new WebDriverWait(_driver, TimeSpan.FromSeconds(10));
                     element = wait.Until((d) => { return d.FindElement(By.ClassName("player-wrapper")); });
                     var temp = element;
                     var iframe = wait.Until((d) => { return temp.FindElement(By.TagName("iframe")); });
                     var link = iframe.GetAttribute("src");
 
-                    WriteDebug("checking if link is valid: " + link);
+                    SendProgress("checking if link is valid: " + link);
 
                     if (CheckIfValidUrl(link))
                     {
-                        WriteDebug("Link is OK. Navigating...");
-                        driver.Navigate().GoToUrl(link);
+                        SendProgress("Link is OK. Navigating...");
+                        _driver.Navigate().GoToUrl(link);
                     }
                     else
                     {
-                        WriteDebug("Invalid link...");
+                        SendProgress("Invalid link...");
                         throw new Exception("Invalid link");
                     }
                 }
                 catch (Exception ex)
                 {
-                    WriteDebug("Error2", ex.ToString(), driver?.PageSource);
+                    SendError("Error2", ex.ToString(), _driver?.PageSource);
                 }
 
-                wait = new WebDriverWait(driver, TimeSpan.FromSeconds(10));
+                wait = new WebDriverWait(_driver, TimeSpan.FromSeconds(10));
                 var tmpUrl = wait.Until(d => { return d.FindElement(By.XPath("//div[@id='playerVidzer']/a")).GetAttribute("href"); });
 
                 int index = tmpUrl.LastIndexOf("http", StringComparison.InvariantCulture);
-                WriteDebug("Got link: " + tmpUrl);
+                SendProgress("Got link: " + tmpUrl);
 
                 if (index > 0)
                 {
-                    WriteDebug("Link corrupted, fixing...");
+                    SendProgress("Link corrupted, fixing...");
 
                     tmpUrl = tmpUrl.Remove(0, index);
                 }
                 else
                 {
-                    WriteDebug("Link not corrupted - OK");
+                    SendProgress("Link not corrupted - OK");
                 }
 
-                WriteDebug("UrlDecode...");
+                SendProgress("UrlDecode...");
 
                 tmpUrl = System.Net.WebUtility.UrlDecode(tmpUrl);
 
-                WriteDebug("Check if link is valid: " + tmpUrl);
+                SendProgress("Check if link is valid: " + tmpUrl);
                 if (CheckIfValidUrl(tmpUrl))
                 {
                     linkLocation = tmpUrl;
-                    WriteDebug("link OK");
+                    SendProgress("link OK");
                 }
                 else
                 {
@@ -151,34 +146,36 @@ namespace DownloaderUtil
             }
             catch (Exception ex)
             {
-                WriteDebug("Error3", ex.ToString(), driver?.PageSource);
+                SendError("Error3", ex.ToString(), _driver?.PageSource);
             }
-            finally
-            {
-                driver?.Quit();
-            }
-
-            WriteDebug("\nlink : \n" + linkLocation == string.Empty ? "link not found" : linkLocation);
-            WriteDebug("total time = " + new DateTime((DateTime.Now - startTime).Ticks).ToString("HH:mm:ss"));
-            WriteDebug("press enter to exit");
+            
+            SendProgress("\nlink : \n" + linkLocation == string.Empty ? "link not found" : linkLocation);
+            SendProgress("total time = " + new DateTime((DateTime.Now - startTime).Ticks).ToString("HH:mm:ss"));
+            SendProgress("press enter to exit");
 
             //Console.ReadLine();
 
         }
 
-        void WriteDebug(string str)
-        {
-            //Console.WriteLine(str);
-    	    _logger?.LogInformation(str);
+	public void Close()
+	{
+	    _driver?.Quit();
 	}
 
-        void WriteDebug(string param, string str, string pageSource)
+        void SendProgress(string str)
         {
-	    _logger?.LogInformation("Exception: " + param + str + "\n" + pageSource);
-            //Debug.WriteLine(param + " " + str);
-            //screenshot.SaveAsFile(@"c:\\users\lewy\" + param + ".bmp", System.Drawing.Imaging.ImageFormat.Bmp);
-            //File.WriteAllText(@"c:\\users\lewy\" + param + ".txt", pageSource);
-        }
+    	    WebDriverProgress?.Invoke(this, new MessageEventArgs
+	    {
+		Message = str
+	    });
+	}
+
+        void SendError(string param, string str, string pageSource)
+        {
+	    WebDriverError?.Invoke(this, new MessageEventArgs{
+		Message = param + ": " + str
+	    });
+	}
 
         bool CheckIfValidUrl(string link)
         {

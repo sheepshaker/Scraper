@@ -1,9 +1,9 @@
-﻿using Microsoft.AspNet.Builder;
 using Microsoft.Owin.Builder;
 using Owin;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.AspNet.Builder;
 
 namespace Scraper
 {

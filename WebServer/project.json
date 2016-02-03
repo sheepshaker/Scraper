@@ -25,7 +25,8 @@
     "Microsoft.Extensions.Configuration.Json": "1.0.0-rc1-final",
     "Selenium.Support": "2.50.1",
     "Selenium.WebDriver": "2.50.1",
-    "phantomjs": "2.1.1"
+    "phantomjs": "2.1.1",
+    "mongocsharpdriver": "2.2.3"
   },
   "commands": {
     "web": "Microsoft.AspNet.Server.Kestrel --server.urls http://*:8010"
