@@ -1,5 +1,5 @@
 <!doctype html>
-<html ng-app="app">
+<html>
 <script src="js/angular.min.js"></script>
 <script src="js/app/app.module.js"></script>
 <script src="js/app/mainCtrl.js"></script>
@@ -9,18 +9,16 @@
 <script src="/signalr/hubs"></script>
 
   <head>
+
   </head>
   <body>
-<p>Click the button to demonstrate the prompt box.</p>
 
-<button onclick="myFunction()">Try it</button>
-
-<p id="demo"></p>
-
-
-    <input type="text" ng-model="vm.food" placeholder="Enter food"/>
-    <p>>>> {{2+2*2}} <<<</p>
-    <p> Sriracha sauce is great with {{vm.food}}! </p>
+    <div ng-app="myApp" ng-controller="myCtrl">
+	<div ng-repeat="model in scrapes">
+	    <p>The ID is {{model.Id}}</p>
+	    <p>The name is {{model.Name}}</p>
+	</div>	
+    </div>
 
     <h2 id="username">Chat</h2>
     <div id="userStat"> </div> 
@@ -34,6 +32,14 @@
     </div>
 <script>
 
+var app = angular.module('myApp', []);
+app.controller('myCtrl', function($scope, $http) {
+  $http.get('http://82.14.248.46:8010/api/Scraper')
+  .then(function(response) {
+      $scope.scrapes = response.data;
+  });
+});
+/*
 (function(){
 // Reference the auto-generated proxy for the hub.
             var chat = $.connection.chatHub;
@@ -63,12 +69,7 @@
             });
 
 })();
-
-// This optional function html-encodes messages for display in the page.
-        function htmlEncode(value) {
-            var encodedValue = $('<div />').text(value).html();
-            return encodedValue;
-        }
+*/
 </script>
   </body>
 </html>

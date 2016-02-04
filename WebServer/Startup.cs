@@ -66,7 +66,7 @@ namespace Scraper
 	    _downloader.WebDriverError += (s,e) => { _logger.LogError(e.Message); };
 	    _downloader.DownloaderProgress += (s,e) => { _logger.LogInformation("Progress"); };
 	    _downloader.DownloaderError += (s,e) => { _logger.LogError(e.Message); };
-	    DownloaderUtil.Downloader.Instance.Go("http://kinoman.tv/film/karbala-2");
+	    //DownloaderUtil.Downloader.Instance.Go("http://kinoman.tv/film/karbala-2");
         }
 
         // Entry point for the application.

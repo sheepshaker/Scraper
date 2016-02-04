@@ -8,12 +8,24 @@ using Scraper.Models;
 
 namespace Scraper.Controllers
 {
+    [Route("api/[controller]")]
     public class ScraperController : Controller
     {
         [HttpGet]
         public IEnumerable<Scrape> GetAllScrapes()
         {
-            return null;
+            return new Scrape[]{
+		new Scrape("test url"){
+		    Name = "Name1"
+		},
+		new Scrape("test url"){
+		    Name = "Name2"
+		},new Scrape("test url"){
+		    Name = "Name3"
+		},new Scrape("test url"){
+		    Name = "Name4"
+		}
+	    };
         }
  
         [HttpGet("{scrapeId:int}", Name = "GetScrapeById")]

@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using MongoDB.Bson;
 using MongoDB.Driver;
+using MongoDB.Driver.Builders;
 using Scraper.Models;
 
 namespace Scraper.Repositories
@@ -10,10 +12,10 @@ namespace Scraper.Repositories
 	protected static IMongoClient _client;
 	protected static IMongoDatabase _database;
 	
-	public ScraperRepository()
+	public ScraperRepository(string dbName)
 	{
 	    _client = new MongoClient();
-	    _database = _client.GetDatabase("ScraperDB");
+	    _database = _client.GetDatabase(dbName);
 	}
 
 	public void Add(Scrape scrape)
@@ -22,18 +24,32 @@ namespace Scraper.Repositories
 	    collection.InsertOne(scrape);
 	}
 
-	public void Update(Scrape scrape)
+	public void Update(Scrape newScrape)
 	{
 	    var collection = _database.GetCollection<Scrape>("scrapes");
-	    var filter = Builders<Scrape>.Filter.Eq(s => s.Id, scrape.Id);
-	    collection.ReplaceOne(filter, scrape);
+	    collection.ReplaceOne(s => string.Equals(s.Id, newScrape.Id), newScrape);
 	}
 
 	public void Remove(string id)
 	{
 	    var collection = _database.GetCollection<Scrape>("scrapes");
-	    var filter = Builders<Scrape>.Filter.Eq(s => s.Id, id);
-	    collection.DeleteOne(filter);    
+	    collection.DeleteOne(s => string.Equals(s.Id, id));    
+	}
+
+	public IEnumerable<Scrape> GetAll()
+	{
+	    var collection = _database.GetCollection<Scrape>("scrapes");
+	    return collection.Find(_ => true).ToListAsync().GetAwaiter().GetResult();
+	}
+
+	public void DeleteAll()
+	{
+	    _database.GetCollection<Scrape>("scrapes").DeleteManyAsync(s => true).GetAwaiter().GetResult();
+	}
+	
+	public Scrape Get(string id)
+	{
+	    return _database.GetCollection<Scrape>("scrapes").Find(s => string.Equals(s.Id, id)).FirstOrDefault();
 	}
     }
 }

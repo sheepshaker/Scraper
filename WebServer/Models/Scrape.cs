@@ -8,7 +8,7 @@ namespace Scraper.Models
 {
     public class Scrape
     {
-	const string TempOutputPath = "/media/MEDIA/ScrapeDownload/temp";
+	const string TempOutputPath = "/media/MEDIA/ScraperDownload/temp";
 	const string OutputPath = "/media/MEDIA/ScraperDownload";	
 
 	public Scrape(string url)
@@ -22,13 +22,18 @@ namespace Scraper.Models
 	    {
 	    	Directory.CreateDirectory(OutputPath);
 	    }
-	}
 
-	public string Id { get; set; }
+	    Id = Guid.NewGuid().ToString();
+	    DateStarted = DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss");
+	}
+	
+	public string Id { get; private set; }
 	public string Name { get; set; }
 	public string Progress { get; set; }
 	public string Eta { get; set; }
-	
+	public string DateStarted {get;set;}
+	public string DateCompleted {get;set;}	
+
 	public void Cancel()
 	{
 	}

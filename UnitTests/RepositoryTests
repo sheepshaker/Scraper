@@ -1,0 +1,142 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using Scraper;
+using Scraper.Models;
+using Scraper.Repositories;
+using DownloaderUtil;
+using Xunit;
+
+namespace UnitTests
+{
+    // see example explanation on xUnit.net website:
+    // https://xunit.github.io/docs/getting-started-dnx.html
+    public class RepositoryTests
+    {
+	IScraperRepository _repo;
+
+	public RepositoryTests()
+	{
+	    _repo = new ScraperRepository("ScrapesDBTest");
+	}
+	
+        [Fact]
+        public void DeleteAllTest()
+        {
+	    _repo.Add(new Scrape("test url"){
+                Name = "test name1",
+                Progress = "14",
+                Eta = "01:39:53"
+            });
+	    _repo.Add(new Scrape("test url"){
+                Name = "test name2",
+                Progress = "14",
+                Eta = "01:39:53"
+            });
+	    _repo.Add(new Scrape("test url"){
+                Name = "test name3",
+                Progress = "14",
+                Eta = "01:39:53"
+            });
+	    
+            Assert.True(_repo.GetAll().Any());
+	    
+	    _repo.DeleteAll();
+    	    Assert.True(!_repo.GetAll().Any());
+	}
+
+	[Fact]
+	public void AddElementsTest()
+	{
+	    _repo.DeleteAll();
+	    Assert.True(!_repo.GetAll().Any());
+	    
+	    _repo.Add( new Scrape("test url"){
+                Name = "test name1",
+                Progress = "14",
+                Eta = "01:39:53"
+            });
+	    _repo.Add(new Scrape("test url"){
+                Name = "test name2",
+                Progress = "14",
+                Eta = "01:39:53"
+            });
+	    _repo.Add(new Scrape("test url"){
+                Name = "test name3",
+                Progress = "14",
+                Eta = "01:39:53"
+            });
+
+	    Assert.Equal(_repo.GetAll().Count(), 3);
+	}
+
+	[Fact]
+	public void GetSingleElementTest()
+	{
+	    var scrape = new Scrape("test url"){
+                Name = "test name1",
+                Progress = "14",
+                Eta = "01:39:53"
+            };
+
+	    _repo.Add(scrape);
+	    
+	    var addedScrape = _repo.Get(scrape.Id);
+
+	    Assert.Equal(scrape.Id, addedScrape.Id);
+	}
+	
+	[Fact]
+	public void RemoveSingleElementTest()
+	{
+	    var scrape = new Scrape("test url"){
+                Name = "test name1",
+                Progress = "14",
+                Eta = "01:39:53"
+            };
+
+	    _repo.Add(scrape);
+	    
+	    var addedScrape = _repo.Get(scrape.Id);
+	    Assert.Equal(scrape.Id, addedScrape.Id);
+
+	    _repo.Remove(addedScrape.Id);
+
+	    
+	    Assert.True(_repo.Get(addedScrape.Id) == null);
+	}
+	
+	[Fact]
+	public void UpdateSingleElementTest()
+	{
+	    var scrape = new Scrape("test url"){
+                Name = "test name1",
+                Progress = "14",
+                Eta = "01:39:53"
+            };
+	    
+	    _repo.Add(scrape);
+
+	    var addedScrape = _repo.Get(scrape.Id);
+	    Assert.Equal(scrape.Id, addedScrape.Id);
+
+	    addedScrape.Progress = "25";
+	    _repo.Update(addedScrape);
+	    
+	    var updatedScrape = _repo.Get(addedScrape.Id);
+	    Assert.Equal(updatedScrape.Id, addedScrape.Id);
+	    Assert.Equal(updatedScrape.Progress, "25");
+	}
+
+	[Fact]
+	public void GetWrongSingleElementTest()
+	{
+	    _repo.DeleteAll();
+	    Assert.True(!_repo.GetAll().Any());
+	    
+	    var scrape = _repo.Get("test ID");
+
+	    Assert.True(scrape == null);
+	}
+    }
+}
