@@ -23,7 +23,7 @@ namespace DownloaderUtil
 	    var service = PhantomJSDriverService.CreateDefaultService();
 	    var options = new PhantomJSOptions();
 	    	
-	    _driver = new PhantomJSDriver(service, options, TimeSpan.FromSeconds(30));
+	    //_driver = new PhantomJSDriver(service, options, TimeSpan.FromSeconds(30));
 	}
 
 	public static Downloader Instance { get { return Nested.instance; } }

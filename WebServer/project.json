@@ -26,7 +26,8 @@
     "Selenium.Support": "2.50.1",
     "Selenium.WebDriver": "2.50.1",
     "phantomjs": "2.1.1",
-    "mongocsharpdriver": "2.2.3"
+    "mongocsharpdriver": "2.2.3",
+    "Newtonsoft.Json": "8.0.2"
   },
   "commands": {
     "web": "Microsoft.AspNet.Server.Kestrel --server.urls http://*:8010"

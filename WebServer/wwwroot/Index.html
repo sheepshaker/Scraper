@@ -7,17 +7,70 @@
 <script src="js/jquery.signalR-2.2.0.min.js"></script>
 <script src="js/angular-signalr-hub.min.js"></script>
 <script src="/signalr/hubs"></script>
-
+<script src="js/masonry.pkgd.min.js"></script>
   <head>
+<script>
 
+
+var app = angular.module('myApp', []);
+app.controller('GetAllScrapes', function($scope, $http) {
+  $http.get('http://82.14.248.46:8010/api/Scraper')
+  .then(function(response) {
+      $scope.scrapes = response.data;
+  });
+});
+app.controller('TitleController', function($scope){ $scope.title = "Scrapes:"; });
+
+app.controller("AddNewScrape", function ($scope, $http) {
+
+        $scope.SendData = function () {
+	    
+            var config = {
+                headers : {
+                    'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8;'
+                }
+            }
+
+            $http.post("http://82.14.248.46:8010/api/Scraper","=" + $scope.formUrl, config)
+            .then(function (response) {
+                $scope.PostDataResponse = response.data;
+            });
+        };
+    });
+</script>
+<LINK REL=StyleSheet HREF="css/masonry-grid.css" TYPE="text/css">
   </head>
-  <body>
+  <body ng-app="myApp">
 
-    <div ng-app="myApp" ng-controller="myCtrl">
+<div ng-controller="AddNewScrape">
+    <p>Url: <input type="text" name="formUrl" ng-model="formUrl" required /></p>
+    <button ng-click="SendData()">Submit</button>
+    <hr />
+    {{ PostDataResponse }}
+</div>
+
+    <div class="grid" ng-controller="GetAllScrapes">
+	
 	<div ng-repeat="model in scrapes">
-	    <p>The ID is {{model.Id}}</p>
-	    <p>The name is {{model.Name}}</p>
-	</div>	
+	    <div ng-if="!model.DateCompleted" class="grid-item grid-item--width2 grid-item--height3">
+		<p>Name {{model.Name}}</p>
+		<p>Url {{model.Url}}</p>
+		<p>Progress {{model.Progress}}</p>
+		<p>Started {{model.DateStarted}}</p>
+		<p>Eta {{model.Eta}}</p>
+		</div>
+	    <div ng-if="model.DateCompleted" class="grid-item-completed grid-item--width2 grid-item--height3">
+		<p>Name {{model.Name}}</p>
+		<p>Url {{model.Url}}</p>
+		<p>Progress {{model.Progress}}</p>
+		<p>Started {{model.DateStarted}}</p>
+		<p>Completed {{model.DateCompleted}}</p>
+		<p>Elapsed {{model.DateCompleted - model.DateStarted}}</p>
+	    </div>
+	</div>
+    
+    </div>
+	
     </div>
 
     <h2 id="username">Chat</h2>
@@ -31,14 +84,6 @@
         <ul id="time"></ul>
     </div>
 <script>
-
-var app = angular.module('myApp', []);
-app.controller('myCtrl', function($scope, $http) {
-  $http.get('http://82.14.248.46:8010/api/Scraper')
-  .then(function(response) {
-      $scope.scrapes = response.data;
-  });
-});
 /*
 (function(){
 // Reference the auto-generated proxy for the hub.
