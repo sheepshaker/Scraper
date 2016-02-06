@@ -13,12 +13,16 @@
 
 
 var app = angular.module('myApp', []);
-app.controller('GetAllScrapes', function($scope, $http) {
-  $http.get('http://82.14.248.46:8010/api/Scraper')
+app.controller('GetAllScrapes', function($scope, $http, $rootScope) {
+  $rootScope.scrapes = [];
+    $http.get('http://82.14.248.46:8010/api/Scraper')
   .then(function(response) {
-      $scope.scrapes = response.data;
+      $rootScope.scrapes = response.data;
+	//alert($rootScope.scrapes);
   });
-});
+}
+);
+
 app.controller('TitleController', function($scope){ $scope.title = "Scrapes:"; });
 
 app.controller("AddNewScrape", function ($scope, $http) {
@@ -37,55 +41,21 @@ app.controller("AddNewScrape", function ($scope, $http) {
             });
         };
     });
-</script>
-<LINK REL=StyleSheet HREF="css/masonry-grid.css" TYPE="text/css">
-  </head>
-  <body ng-app="myApp">
 
-<div ng-controller="AddNewScrape">
-    <p>Url: <input type="text" name="formUrl" ng-model="formUrl" required /></p>
-    <button ng-click="SendData()">Submit</button>
-    <hr />
-    {{ PostDataResponse }}
-</div>
+app.controller("DeleteAllScrapes", function ($scope, $http, $rootScope) {
 
-    <div class="grid" ng-controller="GetAllScrapes">
-	
-	<div ng-repeat="model in scrapes">
-	    <div ng-if="!model.DateCompleted" class="grid-item grid-item--width2 grid-item--height3">
-		<p>Name {{model.Name}}</p>
-		<p>Url {{model.Url}}</p>
-		<p>Progress {{model.Progress}}</p>
-		<p>Started {{model.DateStarted}}</p>
-		<p>Eta {{model.Eta}}</p>
-		</div>
-	    <div ng-if="model.DateCompleted" class="grid-item-completed grid-item--width2 grid-item--height3">
-		<p>Name {{model.Name}}</p>
-		<p>Url {{model.Url}}</p>
-		<p>Progress {{model.Progress}}</p>
-		<p>Started {{model.DateStarted}}</p>
-		<p>Completed {{model.DateCompleted}}</p>
-		<p>Elapsed {{model.DateCompleted - model.DateStarted}}</p>
-	    </div>
-	</div>
-    
-    </div>
-	
-    </div>
+        $scope.SendData = function () {
+	    
+            $http.delete("http://82.14.248.46:8010/api/Scraper")
+            .then(function (response) {
+		$rootScope.scrapes.length = 0;
+                $scope.PostDataResponse = response.data;
+            });
+        };
+    });
 
-    <h2 id="username">Chat</h2>
-    <div id="userStat"> </div> 
-    <div class="container">
-        <input type="text" id="message"/>
-        <input type="button" id="sendmessage" value="Send"/>
-        
-	<input type="hidden" id="displayname"/>
-        <ul id="discussion"></ul>
-        <ul id="time"></ul>
-    </div>
-<script>
-/*
-(function(){
+app.controller("signalrController", function ($rootScope){
+
 // Reference the auto-generated proxy for the hub.
             var chat = $.connection.chatHub;
             // Create a function that the hub can call back to display messages.
@@ -97,10 +67,15 @@ app.controller("AddNewScrape", function ($scope, $http) {
 
         chat.client.broadcastTime = function (message) {
                 // Add the message to the page.
-                $('#discussion').append('<li><strong>' + htmlEncode(message) + '</li>');
+                //$('#discussion').append('<li><strong>' + htmlEncode(message) + '</li>');
             };
+	chat.client.broadcastScrapeAdded = function (scrape) {
+                // Add the message to the page.
+        	//alert(scrape);
+		$rootScope.scrapes.push(scrape);
+	    };
             // Get the user name and store it to prepend to messages.
-            $('#displayname').val(prompt('Enter your name:', ''));
+            $('#displayname').val(/*prompt('Enter your name:', '')*/"jacko");
             // Set initial focus to message input box.
             $('#message').focus();
             // Start the connection.
@@ -112,9 +87,77 @@ app.controller("AddNewScrape", function ($scope, $http) {
                     $('#message').val('').focus();
                 });
             });
+});
 
-})();
-*/
+function htmlEncode(value) {
+            var encodedValue = $('<div />').text(value).html();
+            return encodedValue;
+        }
+
+</script>
+<LINK REL=StyleSheet HREF="css/masonry-grid.css" TYPE="text/css">
+  </head>
+  <body ng-app="myApp">
+<div ng-controller="signalrController"></div>
+<div ng-controller="AddNewScrape">
+    <p>Url: <input type="text" name="formUrl" ng-model="formUrl" required /></p>
+    <button ng-click="SendData()">Submit</button>
+    <hr />
+    {{ PostDataResponse }}
+</div>
+<div ng-controller="DeleteAllScrapes">
+    <button ng-click="SendData()">Delete all</button>
+    <hr />
+    {{ PostDataResponse }}
+</div>
+
+<div class="grid" ng-controller="GetAllScrapes">
+    <div ng-repeat="model in scrapes">
+        <div ng-if="!model.DateCompleted" class="grid-item grid-item--width2 grid-item--height3">
+	    <p>Name {{model.Name}}</p>
+	    <p>Url {{model.Url}}</p>
+	    <p>Progress {{model.Progress}}</p>
+	    <p>Started {{model.DateStarted}}</p>
+	    <p>Eta {{model.Eta}}</p>
+	</div>
+	<div ng-if="model.DateCompleted" class="grid-item-completed grid-item--width2 grid-item--height3">
+	    <p>Name {{model.Name}}</p>
+	    <p>Url {{model.Url}}</p>
+	    <p>Progress {{model.Progress}}</p>
+	    <p>Started {{model.DateStarted}}</p>
+	    <p>Completed {{model.DateCompleted}}</p>
+	    <p>Elapsed {{model.DateCompleted - model.DateStarted}}</p>
+	</div>
+    </div>
+</div>
+
+<!--
+<div ng-controller="GetAllScrapes">
+    <div ng-repeat="model in scrapes">
+	<div ng-if="!model.DateCompleted" >
+	    <p>Name {{model.Name}}</p>
+	    <p>Url {{model.Url}}</p>
+	    <p>Progress {{model.Progress}}</p>
+	    <p>Started {{model.DateStarted}}</p>
+	    <p>Eta {{model.Eta}}</p>
+	</div>
+    </div>
+</div>
+-->
+    <h2 id="username">Chat</h2>
+    <div id="userStat"> </div> 
+    <div class="container">
+        <input type="text" id="message"/>
+        <input type="button" id="sendmessage" value="Send"/>
+        
+	<input type="hidden" id="displayname"/>
+        <ul id="discussion"></ul>
+        <ul id="time"></ul>
+    </div>
+<script>
+
+
+
 </script>
   </body>
 </html>

@@ -5,6 +5,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
 using Microsoft.AspNet.SignalR;
+using Newtonsoft.Json;
+using Scraper.Models;
 
 namespace Scraper.Hubs
 {
@@ -38,6 +40,12 @@ namespace Scraper.Hubs
             // Call the broadcastMessage method to update clients.
             //Clients.All.broadcastMessage(name, message);
             Clients.All.addNewMessageToPage(name, message);
+	}
+
+	public void SendScrapeAdded(Scrape scrape)
+	{
+	    var json = JsonConvert.SerializeObject(scrape);
+	    Clients.All.broadcastScrapeAdded(json);
 	}
     }
 }

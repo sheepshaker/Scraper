@@ -7,7 +7,9 @@ using DownloaderUtil;
 using Scraper.Models;
 using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Microsoft.AspNet.SignalR;
 
 namespace Scraper.Controllers
 {
@@ -64,12 +66,28 @@ namespace Scraper.Controllers
 	    }
 
 	    _logger.LogInformation("New url: " + url);
-	    _scrapes.Add(new Scrape(url){
-		Name = "new name"
-	    });
 	    
+	    var scrape = new Scrape(url){
+		Name = "new name"
+	    };
+
+	    _scrapes.Add(scrape);
+
+	    var hub = GlobalHost.ConnectionManager.GetHubContext<Scraper.Hubs.ChatHub>();
+	    
+	    var json = JsonConvert.SerializeObject(scrape);
+	    hub.Clients.All.broadcastScrapeAdded(JObject.Parse(json));
+	    
+	    _logger.LogInformation("json = " + json.ToString());
 	    return Content("Post Invoked: " + url);
 	}
+	
+	[HttpDelete]
+        public string DeleteAll()
+        {
+	    _scrapes.Clear();
+            return "Delete All - OK";
+        }
 /*
 [HttpPost]
 public string PostSimple(string data)
