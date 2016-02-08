@@ -17,7 +17,8 @@ namespace DownloaderUtil
 	public event EventHandler<MessageEventArgs> DownloaderError;
 
 	IWebDriver _driver;
-	
+	string _name;
+
 	private Downloader()
 	{
 	    var service = PhantomJSDriverService.CreateDefaultService();
@@ -60,6 +61,7 @@ namespace DownloaderUtil
                 
                 try
                 {
+		    _name = driver.FindElement(By.XPath("//span[@itemprop='name']")).Text;
                     IWebElement query = _driver.FindElement(By.XPath("//div[@class='player-wrapper']/a"));
                     SendProgress("Click 1");
                     query.Click();

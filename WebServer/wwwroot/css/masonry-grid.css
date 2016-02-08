@@ -22,7 +22,7 @@ body { font-family: sans-serif; }
   width: 160px;
   height: 120px;
   float: left;
-  background: #666699;
+  background: #6699ff;
   border: 2px solid #333;
   border-color: hsla(0, 0%, 0%, 0.5);
   border-radius: 5px;
@@ -32,7 +32,7 @@ body { font-family: sans-serif; }
   width: 160px;
   height: 120px;
   float: left;
-  background: #6699ff;
+  background: #666699;
   border: 2px solid #333;
   border-color: hsla(0, 0%, 0%, 0.5);
   border-radius: 5px;

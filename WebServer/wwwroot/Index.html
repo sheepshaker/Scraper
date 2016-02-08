@@ -48,7 +48,7 @@ app.controller("DeleteAllScrapes", function ($scope, $http, $rootScope) {
 	    
             $http.delete("http://82.14.248.46:8010/api/Scraper")
             .then(function (response) {
-		$rootScope.scrapes.length = 0;
+		//$rootScope.scrapes.length = 0;
                 $scope.PostDataResponse = response.data;
             });
         };
@@ -69,11 +69,61 @@ app.controller("signalrController", function ($rootScope){
                 // Add the message to the page.
                 //$('#discussion').append('<li><strong>' + htmlEncode(message) + '</li>');
             };
+	
+	chat.client.broadcastDeleteAll = function () {
+                // Add the message to the page.
+        	//alert("delete all");
+		console.log("delete all");
+		$rootScope.scrapes.length = 0;
+	    };
+
 	chat.client.broadcastScrapeAdded = function (scrape) {
                 // Add the message to the page.
         	//alert(scrape);
 		$rootScope.scrapes.push(scrape);
 	    };
+
+    	chat.client.broadcastScrapeUpdate = function (scrapeArray) {
+                // Add the message to the page.
+		//var cohnt =  JSON.parse(scrapeArray).length
+        	//console.log("got an update " + scrapeArray + " count = " + cohnt);
+		//var scrapez = $rootScope.scrapes;
+		//console.log(scrapez[0]);
+		for(i=0; i < scrapeArray.length; i++)
+		{
+		    for(j=0; j < $rootScope.scrapes.length; j++)
+		    {
+			if(scrapeArray[i].Id == $rootScope.scrapes[j].Id)
+			{
+			    //$rootScope.scrapes[j]['Progress'] = "xxx";
+			    //console.log("updated " + j + " from " + $rootScope.scrapes[j].Progress + " to " + scrapeArray[i].Progress);
+			    $rootScope.scrapes[j] = scrapeArray[i];
+			    //$rootScope.scrapes.splice(j, 1, scrapeArray[i]);
+			}
+		    }
+		}
+
+		$rootScope.$apply();
+		/*
+		for(update in scrapeArray)
+		{
+		    //var x = JSON.parse(update)
+		    console.log(update);
+		    for(s in $rootScope.scrapes)
+		    {
+			//console.log("updated" + s);
+			if(s.Id == update.Id)
+			{
+			    //console.log("updated" + s.Id);
+			    s.Progress = update.Progress;
+			}
+		    }
+		    //$rootScope.scrapes[scrape.Id
+		}*/
+		//alert(scrapeArray);
+		//$rootScope.scrapes.push(scrape);
+	    };
+
             // Get the user name and store it to prepend to messages.
             $('#displayname').val(/*prompt('Enter your name:', '')*/"jacko");
             // Set initial focus to message input box.
@@ -96,6 +146,8 @@ function htmlEncode(value) {
 
 </script>
 <LINK REL=StyleSheet HREF="css/masonry-grid.css" TYPE="text/css">
+<LINK REL=StyleSheet HREF="css/progressbar.css" TYPE="text/css">
+
   </head>
   <body ng-app="myApp">
 <div ng-controller="signalrController"></div>
@@ -113,20 +165,29 @@ function htmlEncode(value) {
 
 <div class="grid" ng-controller="GetAllScrapes">
     <div ng-repeat="model in scrapes">
-        <div ng-if="!model.DateCompleted" class="grid-item grid-item--width2 grid-item--height3">
+        <div ng-if="!model.IsCompleted" class="grid-item grid-item--width2 grid-item--height3">
+	    <!--<progress value="{{model.Progress}}" max="100">hello</progress>-->
+	    <div id="progress" class="graph">
+		<div id="bar" style="width:{{model.Progress}}%">
+		    <p>{{model.Progress}}%</p>
+		</div>
+	    </div>
 	    <p>Name {{model.Name}}</p>
 	    <p>Url {{model.Url}}</p>
-	    <p>Progress {{model.Progress}}</p>
 	    <p>Started {{model.DateStarted}}</p>
+	    <p>Speed {{model.DownloadSpeed}}</p>
+	    <p>Downloaded {{model.DownloadedBytes}} / {{model.DownloadSize}}</p>
 	    <p>Eta {{model.Eta}}</p>
+	    
 	</div>
-	<div ng-if="model.DateCompleted" class="grid-item-completed grid-item--width2 grid-item--height3">
+	<div ng-if="model.IsCompleted" class="grid-item-completed grid-item--width2 grid-item--height3">
 	    <p>Name {{model.Name}}</p>
 	    <p>Url {{model.Url}}</p>
 	    <p>Progress {{model.Progress}}</p>
 	    <p>Started {{model.DateStarted}}</p>
+	    <p>Downloaded {{model.DownloadedBytes}} / {{model.DownloadSize}}</p>
 	    <p>Completed {{model.DateCompleted}}</p>
-	    <p>Elapsed {{model.DateCompleted - model.DateStarted}}</p>
+	    <p>Elapsed {{model.Elapsed}}</p>
 	</div>
     </div>
 </div>
