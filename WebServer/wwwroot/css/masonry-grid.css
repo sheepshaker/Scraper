@@ -18,7 +18,17 @@ body { font-family: sans-serif; }
 
 /* ---- grid-item ---- */
 
-.grid-item {
+.grid-item-is-scraping-in-progress {
+  width: 160px;
+  height: 120px;
+  float: left;
+  background: #66ff99;
+  border: 2px solid #333;
+  border-color: hsla(0, 0%, 0%, 0.5);
+  border-radius: 5px;
+}
+
+.grid-item-download-in-progress {
   width: 160px;
   height: 120px;
   float: left;
@@ -28,11 +38,40 @@ body { font-family: sans-serif; }
   border-radius: 5px;
 }
 
-.grid-item-completed{
+.grid-item-download-completed{
   width: 160px;
   height: 120px;
   float: left;
   background: #666699;
+  border: 2px solid #333;
+  border-color: hsla(0, 0%, 0%, 0.5);
+  border-radius: 5px;
+}
+
+.grid-item-is-download-failed{
+  width: 160px;
+  height: 120px;
+  float: left;
+  background: #ff0000;
+  border: 2px solid #333;
+  border-color: hsla(0, 0%, 0%, 0.5);
+  border-radius: 5px;
+}
+
+.grid-item-is-download-canceled{
+  width: 160px;
+  height: 120px;
+  float: left;
+  background: #666699;
+  border: 2px solid #333;
+  border-color: hsla(0, 0%, 0%, 0.5);
+  border-radius: 5px;
+}
+.grid-item-is-scraping-failed{
+  width: 160px;
+  height: 120px;
+  float: left;
+  background: #ff0000;
   border: 2px solid #333;
   border-color: hsla(0, 0%, 0%, 0.5);
   border-radius: 5px;

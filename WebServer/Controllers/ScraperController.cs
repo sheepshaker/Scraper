@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -17,8 +18,9 @@ namespace Scraper.Controllers
     public class ScraperController : Controller
     {
 	ILogger<ScraperController> _logger;
+	DownloaderUtil.Downloader _downloader;
 
-	static List<Scrape> _scrapes = new List<Scrape>{
+	static List<Scrape> _scrapes = new List<Scrape>();/*{
 		new Scrape("test url"){
 		    Name = "Name1",
 		},
@@ -31,31 +33,40 @@ namespace Scraper.Controllers
 		    DateCompleted = "14:38:50 04/02/2016",
 		    IsCompleted = true
 		}
-	    };
+	    };*/
 
-	static System.Threading.Timer _timer;
-	static Random _random;
+	//static System.Threading.Timer _timer;
+	//static Random _random;
  
 	public ScraperController(ILogger<ScraperController> logger)
 	{
 	    _logger = logger;
+	    if(_logger == null)
+		throw new Exception("logger is null");
+	    
+	    //if(_timer == null)
+	    //{
+		//_timer = new System.Threading.Timer(Simulate);
+		//_timer.Change(TimeSpan.Zero, TimeSpan.FromSeconds(1));
+	    //}
 
-	    if(_timer == null)
-	    {
-		_timer = new System.Threading.Timer(Simulate);
-		_timer.Change(TimeSpan.Zero, TimeSpan.FromSeconds(1));
-	    }
+	    //if(_random == null)
+	    //{
+		//_random = new Random();
+	    //}
 
-	    if(_random == null)
-	    {
-		_random = new Random();
-	    }
-	}
+	    //DownloaderUtil.Downloader._logger = _logger;
+	    //_downloader = DownloaderUtil.Downloader.Instance;
+            /*_downloader.WebDriverProgress += OnMessage;
+            _downloader.WebDriverError += OnError;
+            _downloader.DownloaderProgress += OnDownloaderProgress;
+            _downloader.DownloaderError += OnError;
+	*/}
 
         [HttpGet]
         public IEnumerable<Scrape> GetAllScrapes()
         {
-            return _scrapes;
+            return DownloadManager.GetScrapes();//_scrapes;
         }
  
         [HttpGet("{scrapeId:int}", Name = "GetScrapeById")]
@@ -65,42 +76,32 @@ namespace Scraper.Controllers
         }
 
 	[HttpPost]
-	public IActionResult AddScrapePost(string url)
+	public IActionResult AddScrapePost(string inputUrl)
 	{
-	    if(string.IsNullOrEmpty(url))
+	    if(string.IsNullOrEmpty(inputUrl))
 	    {	
 		return Content("Content is null or empty!");
 	    }
 
-	    _logger.LogInformation("New url: " + url);
+	    _logger.LogInformation("New url: " + inputUrl);
 	    
-	    var scrape = new Scrape(url){
-		Name = "new name"
-	    };
-
-	    _scrapes.Add(scrape);
-
-	    var hub = GlobalHost.ConnectionManager.GetHubContext<Scraper.Hubs.ChatHub>();
+	    Scrape scrape = new Scrape(inputUrl);
+	    DownloadManager.Go(scrape);
 	    
-	    var json = JsonConvert.SerializeObject(scrape);
-	    hub.Clients.All.broadcastScrapeAdded(JObject.Parse(json));
-	    
-	    _logger.LogInformation("json = " + json.ToString());
-	    return Content("Post Invoked: " + url);
-	    
+	    return Content("Download enqueued for " + scrape.InputUrl + ", id=" + scrape.Id );
 	}
 	
 	[HttpDelete]
         public string DeleteAll()
         {
 	    _scrapes.Clear();
-            
+	    _downloader.Stop();
 	    var hub = GlobalHost.ConnectionManager.GetHubContext<Scraper.Hubs.ChatHub>();
 	    hub.Clients.All.broadcastDeleteAll();
 	    	    
 	    return "Delete All - OK";
         }
-
+/*
 	private void Simulate(object state)
 	{
 	    //_logger.LogInformation(DateTime.Now.ToString("HH:mm:ss"));
@@ -144,6 +145,32 @@ namespace Scraper.Controllers
 	private int GetProgress()
 	{
 	    return _random.Next(512, 2048);
+	}
+*//*
+	private void OnMessage(object sender, MessageEventArgs e)
+	{
+	    _logger.LogInformation(e.Message);
+	}
+
+	private void OnDownloaderProgress(object sender, DownloaderEventArgs e)
+	{
+	    _logger.LogError("Progress");
+	}
+
+	private void OnError(object sender, MessageEventArgs e)
+	{
+	    _logger.LogError(e.Message);
+	}
+*/
+	protected override void Dispose(bool disposing) 
+	{
+	    /*_logger.LogInformation("Disposing the controller!");
+	    _downloader.WebDriverProgress -= OnMessage;
+            _downloader.WebDriverError -= OnError;
+            _downloader.DownloaderProgress -= OnDownloaderProgress;
+            _downloader.DownloaderError -= OnError;
+	    */
+	    base.Dispose(disposing);
 	}
     }
 }

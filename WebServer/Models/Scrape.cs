@@ -18,7 +18,7 @@ namespace Scraper.Models
 	decimal _downloadSpeed;
 	decimal _downloadedBytes;
 
-	public Scrape(string url)
+	public Scrape(string inputUrl)
 	{
 	    if(Directory.Exists(TempOutputPath) == false)
 	    {
@@ -31,7 +31,8 @@ namespace Scraper.Models
 	    }
 
 	    Id = Guid.NewGuid().ToString();
-	    Url = url;
+	    //DownloadUrl = downloadUrl;
+	    InputUrl = inputUrl;
 	    _dateStarted = DateTime.Now;
 	    _downloadSize = 700000m;
 	    _downloadSpeed = 1024m;
@@ -45,7 +46,7 @@ namespace Scraper.Models
 	{
 	    get
 	    {
-		if(IsCompleted || IsFailed || IsCanceled)
+		if(IsDownloadCompleted || IsDownloadFailed || IsDownloadCanceled || IsScrapingInProgress || IsScrapingFailed)
 		    return string.Empty;
 		
 		var span = TimeSpan.FromSeconds((double) (_downloadSize * 1000/ _downloadSpeed));
@@ -66,21 +67,29 @@ namespace Scraper.Models
 
 	public string DateStarted { get { return _dateStarted.ToString(DateTimeFormat); } }
 	public string DateCompleted { get; set;}	
-	public string Url {get; set;}
+	public string DownloadUrl {get; set;}
+	public string InputUrl {get; set;}
 	public string DownloadedBytes {get{ return _downloadedBytes.ToString(); } }
 	public string DownloadSize { get { return _downloadSize.ToString(); } }
 	public string DownloadSpeed { get { return _downloadSpeed.ToString(); } }
-	public bool IsFailed { get; set; }
-	public bool IsCanceled { get; set; }
-    	public bool IsCompleted { get; set; }
+	public bool IsDownloadFailed { get; set; }
+	public string DownloadFailedMessage {get;set;}	
+	public bool IsDownloadCanceled { get; set; }
+    	public bool IsDownloadCompleted { get; set; }
+	public bool IsDownloadInProgress { get; set; }
+	public bool IsScrapingInProgress { get; set; }
+	public bool IsScrapingFailed {get;set;}
+	public string ScrapingFailedMessage {get;set;}	
 
 	public void SetProgress(decimal bytesDownloaded)
 	{
 	    if(_downloadedBytes + bytesDownloaded >= _downloadSize)
 	    {
 		//completed
+		_downloadedBytes = _downloadSize;
 		_dateCompleted = DateTime.Now;
-		IsCompleted = true;
+		IsDownloadCompleted = true;
+		IsDownloadInProgress = false;
 	    }
 	    else
 	    {
@@ -102,13 +111,13 @@ namespace Scraper.Models
 
 	public void Cancel()
 	{
-	    IsCanceled = true;
+	    IsDownloadCanceled = true;
 	    SetToCompleted();
 	}
 
 	public void Fail()
 	{
-	    IsFailed = true;
+	    IsDownloadFailed = true;
 	    SetToCompleted();
 	}	
 

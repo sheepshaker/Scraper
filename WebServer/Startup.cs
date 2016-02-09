@@ -7,13 +7,14 @@ using Microsoft.AspNet.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.AspNet.SignalR;
 
 namespace Scraper
 {
     public class Startup
     {
 	ILogger _logger;
-	DownloaderUtil.Downloader _downloader;
+	DownloadManager _dm;	
 
         public Startup(IHostingEnvironment env)
         {
@@ -31,7 +32,8 @@ namespace Scraper
         {
             // Add framework services.
             services.AddMvc();
-        }
+    	    //services.AddSingleton<DownloadManager>(_logger, GlobalHost.ConnectionManager.GetHubContext<Scraper.Hubs.ChatHub>());
+	}
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
@@ -61,11 +63,15 @@ namespace Scraper
                     template: "{controller=Home}/{action=Index}/{id?}");
             });
 	    
+	    _dm = new DownloadManager(_logger, GlobalHost.ConnectionManager.GetHubContext<Scraper.Hubs.ChatHub>());
+	    
+	    /*
 	    _downloader = DownloaderUtil.Downloader.Instance;
 	    _downloader.WebDriverProgress += (s,e) => { _logger.LogInformation(e.Message); };
 	    _downloader.WebDriverError += (s,e) => { _logger.LogError(e.Message); };
 	    _downloader.DownloaderProgress += (s,e) => { _logger.LogInformation("Progress"); };
 	    _downloader.DownloaderError += (s,e) => { _logger.LogError(e.Message); };
+	    */
 	    //DownloaderUtil.Downloader.Instance.Go("http://kinoman.tv/film/karbala-2");
         }
 

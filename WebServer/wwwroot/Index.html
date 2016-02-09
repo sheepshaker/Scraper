@@ -82,46 +82,56 @@ app.controller("signalrController", function ($rootScope){
         	//alert(scrape);
 		$rootScope.scrapes.push(scrape);
 	    };
+/*
+	chat.client.broadcastScraperCompleted = function (scrape) {
+	    for(j=0; j < $rootScope.scrapes.length; j++)
+	    {
+		if(scrape.Id == $rootScope.scrapes[j].Id)
+		{
+		    $rootScope.scrapes[j] = scrape;
+		}
+	    }
 
-    	chat.client.broadcastScrapeUpdate = function (scrapeArray) {
-                // Add the message to the page.
-		//var cohnt =  JSON.parse(scrapeArray).length
-        	//console.log("got an update " + scrapeArray + " count = " + cohnt);
-		//var scrapez = $rootScope.scrapes;
-		//console.log(scrapez[0]);
+	    $rootScope.$apply();
+	};
+
+	chat.client.broadcastScraperFailed = function (scrape) {
+	    for(j=0; j < $rootScope.scrapes.length; j++)
+	    {
+		if(scrape.Id == $rootScope.scrapes[j].Id)
+		{
+		    $rootScope.scrapes[j] = scrape;
+		}
+	    }
+
+	    $rootScope.$apply();
+	};*/
+
+	chat.client.broadcastScrapeUpdate = function (scrape) {
+	    for(j=0; j < $rootScope.scrapes.length; j++)
+	    {
+		if(scrape.Id == $rootScope.scrapes[j].Id)
+		{
+		    $rootScope.scrapes[j] = scrape;
+		}
+	    }
+
+	    $rootScope.$apply();
+	};
+
+    	chat.client.broadcastScrapesUpdate = function (scrapeArray) {
 		for(i=0; i < scrapeArray.length; i++)
 		{
 		    for(j=0; j < $rootScope.scrapes.length; j++)
 		    {
 			if(scrapeArray[i].Id == $rootScope.scrapes[j].Id)
 			{
-			    //$rootScope.scrapes[j]['Progress'] = "xxx";
-			    //console.log("updated " + j + " from " + $rootScope.scrapes[j].Progress + " to " + scrapeArray[i].Progress);
 			    $rootScope.scrapes[j] = scrapeArray[i];
-			    //$rootScope.scrapes.splice(j, 1, scrapeArray[i]);
 			}
 		    }
 		}
 
 		$rootScope.$apply();
-		/*
-		for(update in scrapeArray)
-		{
-		    //var x = JSON.parse(update)
-		    console.log(update);
-		    for(s in $rootScope.scrapes)
-		    {
-			//console.log("updated" + s);
-			if(s.Id == update.Id)
-			{
-			    //console.log("updated" + s.Id);
-			    s.Progress = update.Progress;
-			}
-		    }
-		    //$rootScope.scrapes[scrape.Id
-		}*/
-		//alert(scrapeArray);
-		//$rootScope.scrapes.push(scrape);
 	    };
 
             // Get the user name and store it to prepend to messages.
@@ -147,6 +157,7 @@ function htmlEncode(value) {
 </script>
 <LINK REL=StyleSheet HREF="css/masonry-grid.css" TYPE="text/css">
 <LINK REL=StyleSheet HREF="css/progressbar.css" TYPE="text/css">
+<LINK REL=StyleSheet HREF="css/spinner.css" TYPE="text/css">
 
   </head>
   <body ng-app="myApp">
@@ -164,23 +175,50 @@ function htmlEncode(value) {
 </div>
 
 <div class="grid" ng-controller="GetAllScrapes">
-    <div ng-repeat="model in scrapes">
-        <div ng-if="!model.IsCompleted" class="grid-item grid-item--width2 grid-item--height3">
-	    <!--<progress value="{{model.Progress}}" max="100">hello</progress>-->
+    <div ng-repeat="model in scrapes">	
+	<div ng-if="model.IsScrapingInProgress" class="grid-item-is-scraping-in-progress grid-item--width2 grid-item--height3">
+	    <div class="loader"></div>
+	    <p>Input Url {{model.InputUrl}}</p>
+	    <p>Started {{model.DateStarted}}</p>
+	</div>
+	<div ng-if="model.IsScrapingFailed" class="grid-item-scraping-failed grid-item--width2 grid-item--height3">
+	    <p>Input Url {{model.InputUrl}}</p>
+	    <p>Started {{model.DateStarted}}</p>
+	    <p>Error: {{model.ScrapingFailedMessage}}</p>
+	</div>
+        <div ng-if="model.IsDownloadInProgress" class="grid-item-download-in-progress grid-item--width2 grid-item--height3">
 	    <div id="progress" class="graph">
 		<div id="bar" style="width:{{model.Progress}}%">
 		    <p>{{model.Progress}}%</p>
 		</div>
 	    </div>
-	    <p>Name {{model.Name}}</p>
-	    <p>Url {{model.Url}}</p>
+	    <h1>{{model.Name}}</h1>
+	    <a href="{{model.DownloadUrl}}">Download Url</a>
+	    <a href="{{model.InputUrl}}">Input Url</a>
 	    <p>Started {{model.DateStarted}}</p>
 	    <p>Speed {{model.DownloadSpeed}}</p>
 	    <p>Downloaded {{model.DownloadedBytes}} / {{model.DownloadSize}}</p>
 	    <p>Eta {{model.Eta}}</p>
-	    
 	</div>
-	<div ng-if="model.IsCompleted" class="grid-item-completed grid-item--width2 grid-item--height3">
+	<div ng-if="model.IsDownloadCompleted" class="grid-item-download-completed grid-item--width2 grid-item--height3">
+	    <p>Name {{model.Name}}</p>
+	    <p>Url {{model.Url}}</p>
+	    <p>Progress {{model.Progress}}</p>
+	    <p>Started {{model.DateStarted}}</p>
+	    <p>Downloaded {{model.DownloadedBytes}} / {{model.DownloadSize}}</p>
+	    <p>Completed {{model.DateCompleted}}</p>
+	    <p>Elapsed {{model.Elapsed}}</p>
+	</div>
+	<div ng-if="model.IsDownloadCanceled" class="grid-item-download-canceled grid-item--width2 grid-item--height3">
+	    <p>Name {{model.Name}}</p>
+	    <p>Url {{model.Url}}</p>
+	    <p>Progress {{model.Progress}}</p>
+	    <p>Started {{model.DateStarted}}</p>
+	    <p>Downloaded {{model.DownloadedBytes}} / {{model.DownloadSize}}</p>
+	    <p>Completed {{model.DateCompleted}}</p>
+	    <p>Elapsed {{model.Elapsed}}</p>
+	</div>
+	<div ng-if="model.IsDownloadFailed" class="grid-item-download-failed grid-item--width2 grid-item--height3">
 	    <p>Name {{model.Name}}</p>
 	    <p>Url {{model.Url}}</p>
 	    <p>Progress {{model.Progress}}</p>
