@@ -4,7 +4,7 @@ using System.IO;
 
 namespace DownloaderUtil
 {
-    public class DownloaderEventArgs : EventArgs
+    public class BaseEventArgs : EventArgs
     {
 	public ScrapeDesc ScrapeDesc {get;set;}
     }

@@ -175,74 +175,76 @@ function htmlEncode(value) {
 </div>
 
 <div class="grid" ng-controller="GetAllScrapes">
-    <div ng-repeat="model in scrapes">	
-	<div ng-if="model.IsScrapingInProgress" class="grid-item-is-scraping-in-progress grid-item--width2 grid-item--height3">
+    <div ng-repeat="model in scrapes | orderBy:'-DateStarted'">	
+	<div ng-if="model.IsScrapingInProgress" class="grid-item-scraping-in-progress grid-item--width2 grid-item--height3">
 	    <div class="loader"></div>
+	    <h1>Scraping in progress</h1>
 	    <p>Input Url {{model.InputUrl}}</p>
 	    <p>Started {{model.DateStarted}}</p>
 	</div>
 	<div ng-if="model.IsScrapingFailed" class="grid-item-scraping-failed grid-item--width2 grid-item--height3">
+	    <h1>Scraping failed</h1>
+	    <p>Error: {{model.ScrapingFailedMessage}}</p>
 	    <p>Input Url {{model.InputUrl}}</p>
 	    <p>Started {{model.DateStarted}}</p>
-	    <p>Error: {{model.ScrapingFailedMessage}}</p>
 	</div>
         <div ng-if="model.IsDownloadInProgress" class="grid-item-download-in-progress grid-item--width2 grid-item--height3">
+	    <h2>{{model.Name}}</h2>
 	    <div id="progress" class="graph">
-		<div id="bar" style="width:{{model.Progress}}%">
-		    <p>{{model.Progress}}%</p>
+		<div id="bar" style="width:{{model.ProgressPercentage}}%">
+		    <p>{{model.ProgressPercentage}}%	{{model.BytesReceived/1024/1024 | number:2}}MB / {{model.FileSize/1024/1024 | number:2}}MB</p>
 		</div>
 	    </div>
-	    <h1>{{model.Name}}</h1>
 	    <a href="{{model.DownloadUrl}}">Download Url</a>
 	    <a href="{{model.InputUrl}}">Input Url</a>
 	    <p>Started {{model.DateStarted}}</p>
-	    <p>Speed {{model.DownloadSpeed}}</p>
-	    <p>Downloaded {{model.DownloadedBytes}} / {{model.DownloadSize}}</p>
-	    <p>Eta {{model.Eta}}</p>
+	    <p>Speed {{model.DownloadSpeed/1024 | number:2}} KB/s</p>
+	    <p>Remaining {{model.Eta}}</p>
 	</div>
 	<div ng-if="model.IsDownloadCompleted" class="grid-item-download-completed grid-item--width2 grid-item--height3">
-	    <p>Name {{model.Name}}</p>
-	    <p>Url {{model.Url}}</p>
-	    <p>Progress {{model.Progress}}</p>
+	    <h2>{{model.Name}}</h2>
+	    <p>Download completed</p>
+	    <a href="{{model.DownloadUrl}}">Download Url</a>
+	    <a href="{{model.InputUrl}}">Input Url</a>
 	    <p>Started {{model.DateStarted}}</p>
-	    <p>Downloaded {{model.DownloadedBytes}} / {{model.DownloadSize}}</p>
 	    <p>Completed {{model.DateCompleted}}</p>
 	    <p>Elapsed {{model.Elapsed}}</p>
+	    <p>Downloaded {{model.BytesReceived/1024/1024 | number:2}}MB / {{model.FileSize/1024/1024|number:2}}MB</p>    
 	</div>
 	<div ng-if="model.IsDownloadCanceled" class="grid-item-download-canceled grid-item--width2 grid-item--height3">
-	    <p>Name {{model.Name}}</p>
-	    <p>Url {{model.Url}}</p>
-	    <p>Progress {{model.Progress}}</p>
+	    <div id="progress" class="graph">
+		<div id="bar" style="width:{{model.ProgressPercentage}}%">
+		    <p>{{model.ProgressPercentage}}% {{model.BytesReceived}}/{{model.FileSize}}</p>
+		</div>
+	    </div>
+	    <h2>{{model.Name}}</h2>
+	    <p>Download canceled</p>
+	    <a href="{{model.DownloadUrl}}">Download Url</a>
+	    <a href="{{model.InputUrl}}">Input Url</a>
 	    <p>Started {{model.DateStarted}}</p>
-	    <p>Downloaded {{model.DownloadedBytes}} / {{model.DownloadSize}}</p>
+	    <p>Remaining {{model.Eta}}</p>
 	    <p>Completed {{model.DateCompleted}}</p>
 	    <p>Elapsed {{model.Elapsed}}</p>
 	</div>
 	<div ng-if="model.IsDownloadFailed" class="grid-item-download-failed grid-item--width2 grid-item--height3">
-	    <p>Name {{model.Name}}</p>
-	    <p>Url {{model.Url}}</p>
-	    <p>Progress {{model.Progress}}</p>
+	    <div id="progress" class="graph">
+		<div id="bar" style="width:{{model.ProgressPercentage}}%">
+		    <p>{{model.ProgressPercentage}}% {{model.BytesReceived}}/{{model.FileSize}}</p>
+		</div>
+	    </div>
+	    <h2>{{model.Name}}</h2>
+	    <p>Download failed</p>
+	    <p>{{model.DownloadFailedMessage}}</p>
+	    <a href="{{model.DownloadUrl}}">Download Url</a>
+	    <a href="{{model.InputUrl}}">Input Url</a>
 	    <p>Started {{model.DateStarted}}</p>
-	    <p>Downloaded {{model.DownloadedBytes}} / {{model.DownloadSize}}</p>
+	    <p>Remaining {{model.Eta}}</p>
 	    <p>Completed {{model.DateCompleted}}</p>
 	    <p>Elapsed {{model.Elapsed}}</p>
 	</div>
     </div>
 </div>
-
 <!--
-<div ng-controller="GetAllScrapes">
-    <div ng-repeat="model in scrapes">
-	<div ng-if="!model.DateCompleted" >
-	    <p>Name {{model.Name}}</p>
-	    <p>Url {{model.Url}}</p>
-	    <p>Progress {{model.Progress}}</p>
-	    <p>Started {{model.DateStarted}}</p>
-	    <p>Eta {{model.Eta}}</p>
-	</div>
-    </div>
-</div>
--->
     <h2 id="username">Chat</h2>
     <div id="userStat"> </div> 
     <div class="container">
@@ -253,6 +255,7 @@ function htmlEncode(value) {
         <ul id="discussion"></ul>
         <ul id="time"></ul>
     </div>
+-->
 <script>
 
 

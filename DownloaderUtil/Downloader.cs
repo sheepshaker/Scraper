@@ -18,10 +18,10 @@ namespace DownloaderUtil
     {
 	public event EventHandler<MessageEventArgs> WebDriverProgress;
 	public event EventHandler<MessageEventArgs> WebDriverError;
-	public event EventHandler<DownloaderEventArgs> DownloaderCompleted;
-	public event EventHandler<DownloaderEventArgs> DownloaderProgress;
-	public event EventHandler<MessageEventArgs> DownloaderError;
-	public event EventHandler DownloaderCanceled;
+	public event EventHandler<DownloadEventArgs> DownloadCompleted;
+	public event EventHandler<DownloadEventArgs> DownloadProgress;
+	public event EventHandler<MessageEventArgs> DownloadError;
+	public event EventHandler<MessageEventArgs> DownloadCanceled;
 	public event EventHandler<ScraperCompletedEventArgs> ScraperCompleted;
 	public event EventHandler<ScraperFailedEventArgs> ScraperFailed;
 	
@@ -29,13 +29,22 @@ namespace DownloaderUtil
         const string OutputPath = "/media/MEDIA/ScraperDownload";
 
 	IWebDriver _driver;
-	string _name;
 	Thread _downloadProc;
 	Queue<ScrapeReq> _queue;
 	bool _stop;
 
 	private Downloader()
-	{
+	{	    
+            if(Directory.Exists(TempOutputPath) == false)
+            {
+                Directory.CreateDirectory(TempOutputPath);
+            }
+
+            if(Directory.Exists(OutputPath) == false)
+            {
+                Directory.CreateDirectory(OutputPath);
+            }
+
 	    var service = PhantomJSDriverService.CreateDefaultService();
 	    var options = new PhantomJSOptions();
 	    	
@@ -43,10 +52,8 @@ namespace DownloaderUtil
 
 	    _queue  = new Queue<ScrapeReq>();
 	    
-	    _webClient = new WebClient();
-	    _webClient.DownloadFileCompleted += Completed;
-	    _webClient.DownloadProgressChanged += ProgressChanged;
-		
+	    //_webClient = new WebClient();
+	    	
 	    _downloadProc = new Thread(DownloadProc);
 	    _downloadProc.Start();	    	
     	}
@@ -65,10 +72,16 @@ namespace DownloaderUtil
 
         public void Go(string id, string inputUrl)
         {
-	    if(CheckIfValidUrl(inputUrl) == false)
-		throw new Exception("Invalid url");
+	    ScrapeReq scrapeReq = new ScrapeReq{Id = id, InputUrl=inputUrl};
 
-	    _queue.Enqueue(new ScrapeReq{Id = id, InputUrl=inputUrl});
+	    if(CheckIfValidUrl(inputUrl) == false)
+	    {
+		ScraperFailed?.Invoke(this, new ScraperFailedEventArgs{ScrapeReq=scrapeReq, Message="Invalid url"});
+    	    }
+	    else
+	    {	
+		_queue.Enqueue(scrapeReq);
+	    }
         }
 
 	private ScrapeDesc Scrape(ScrapeReq scrapeReq)
@@ -202,72 +215,6 @@ namespace DownloaderUtil
 	    return scrapeDesc;
 	}
 
-	WebClient _webClient = new WebClient();
-
-	private void Download(ScrapeDesc scrapeDesc)
-	{
-	    SendProgress("Downloading " + scrapeDesc.Name + " from " + scrapeDesc.DownloadUrl);
-	    
-	    scrapeDesc.Stopwatch = new Stopwatch();
-
-	    //using(scrapeDesc.WebClient = new WebClient())
-	    {
-		try
-		{
-		    scrapeDesc.Stopwatch.Start();
-		    _webClient.DownloadFileAsync(scrapeDesc.DownloadUrl, TempOutputPath + "//" + scrapeDesc.Name, scraperDesc);
-		}
-		catch(Exception ex)
-		{
-		    DownloaderError?.Invoke(this, new MessageEventArgs{Message=ex.Message});
-		}
-	    }
-	}
-
-	private void Completed(object sender, AsyncCompletedEventArgs e)
-	{ 
-	    if (e.Error != null)
-	    {
-    		string error = e.Error.ToString();
-    		DownloaderError?.Invoke(this, new MessageEventArgs{Message=error});
-    		return;
-	    }
-    	    if (e.Cancelled == true)
-	    {
-		DownloaderCanceled?.Invoke(this, EventArgs.Empty);
-	    }
-	    else
-	    {
-		ScrapeDesc scrapeDesc = (ScrapeDesc) e.UserState;
-
-	    	scrapeDesc.DownloadSpeed = e.BytesReceived / scrapeDesc.Stopwatch.Elapsed.TotalSeconds;
-	        scrapeDesc.ProgressPercentage = e.ProgressPercentage;
-    		scrapeDesc.BytesReceived = e.BytesReceived;
-		scrapeDesc.FileSize = e.TotalBytesToReceive;
-
-		DownloaderProgress?.Invoke(this, new DownloaderEventArgs{ScrapeDesc = scrapeDesc});
-	    }
-	    
-	    // Stop the stopwatch.
-	    sw.Stop();
-
-	}
-
-	private void ProgressChanged(object sender, DownloadProgressChangedEventArgs e)
-	{
-	    ScrapeDesc scrapeDesc = (ScrapeDesc) e.UserState;
-	    
-	    scrapeDesc.DownloadSpeed = e.BytesReceived / scrapeDesc.Stopwatch.Elapsed.TotalSeconds;
-
-	    scrapeDesc.ProgressPercentage = e.ProgressPercentage;
- 
-	    scrapeDesc.BytesReceived = e.BytesReceived;
-
-	    scrapeDesc.FileSize = e.TotalBytesToReceive;
-
-	    DownloaderProgress?.Invoke(this, new DownloaderEventArgs{ScrapeDesc = scrapeDesc});
-	}
-
 	public void Close()
 	{
 	    _driver?.Quit();
@@ -315,8 +262,11 @@ namespace DownloaderUtil
 		    //SendProgress("dequeued SIZE = " + _queue.Count + " " +  Thread.CurrentThread.ManagedThreadId);
 		    var scrapeDesc = Scrape(scrapeReq);
 		    if(scrapeDesc != null)
+		    {
+			scrapeDesc.WebClient.DownloadFileCompleted += Completed;
+			scrapeDesc.WebClient.DownloadProgressChanged += ProgressChanged;
 			Download(scrapeDesc);
-		    
+		    }
 		    //_downloader.Go(url);
 		    //_scrapes.Add(new Scrape(url));
 		}
@@ -330,6 +280,68 @@ namespace DownloaderUtil
 
 	    SendProgress("Downloader thread terminated");
 	}
+
+	private void Download(ScrapeDesc scrapeDesc)
+	{
+	    SendProgress("Downloading " + scrapeDesc.Name + " from " + scrapeDesc.DownloadUrl);
+	    
+	    try
+	    {
+		scrapeDesc.FilePath = TempOutputPath + "//" + scrapeDesc.Name;
+		scrapeDesc.Stopwatch.Start();
+		scrapeDesc.WebClient.DownloadFileAsync(new Uri(scrapeDesc.DownloadUrl), scrapeDesc.FilePath, scrapeDesc);
+		//_webClient.DownloadFileAsync(new Uri(scrapeDesc.DownloadUrl), scrapeDesc.FilePath, scrapeDesc);
+	    }
+	    catch(Exception ex)
+	    {
+		DownloadError?.Invoke(this, new MessageEventArgs{Message=ex.Message});
+		scrapeDesc.WebClient.Dispose();
+	    }
+	}
+	
+	private void Completed(object sender, AsyncCompletedEventArgs e)
+	{
+	    ScrapeDesc scrapeDesc = (ScrapeDesc)e.UserState;
+	    if (e.Error != null)
+	    {
+    		string error = e.Error.ToString();
+    		DownloadError?.Invoke(this, new MessageEventArgs{ScrapeDesc = scrapeDesc, Message=error});
+    		return;
+	    }
+    	    else if (e.Cancelled == true)
+	    {
+		DownloadCanceled?.Invoke(this, new MessageEventArgs{ScrapeDesc = scrapeDesc, Message="Canceled"});
+	    }
+	    else
+	    {
+	    	File.Move(scrapeDesc.FilePath, OutputPath + "//" + scrapeDesc.Name + ".mp4");
+		DownloadCompleted?.Invoke(this, new DownloadEventArgs{ScrapeDesc = scrapeDesc});
+	    }
+	    
+	    scrapeDesc.Stopwatch.Stop();
+	    scrapeDesc.WebClient.Dispose();
+
+	    scrapeDesc.WebClient.DownloadFileCompleted -= Completed;
+	    scrapeDesc.WebClient.DownloadProgressChanged -= ProgressChanged;
+	}
+
+	private void ProgressChanged(object sender, DownloadProgressChangedEventArgs e)
+	{	
+	    ScrapeDesc scrapeDesc = (ScrapeDesc)e.UserState;
+	    
+	    scrapeDesc.DownloadSpeed = (decimal)(e.BytesReceived / scrapeDesc.Stopwatch.Elapsed.TotalSeconds);
+
+	    scrapeDesc.ProgressPercentage = e.ProgressPercentage;
+ 
+	    scrapeDesc.BytesReceived = e.BytesReceived;
+
+	    scrapeDesc.FileSize = e.TotalBytesToReceive;
+
+	    scrapeDesc.Eta = TimeSpan.FromSeconds((double) (scrapeDesc.FileSize / scrapeDesc.DownloadSpeed));
+
+	    //if(e.BytesReceived % scrapeDesc.DownloadSpeed == 0
+		DownloadProgress?.Invoke(this, new DownloadEventArgs{ScrapeDesc = scrapeDesc});
+	}
     }
 
     public class ScrapeReq
@@ -338,17 +350,26 @@ namespace DownloaderUtil
 	public string InputUrl {get;set;}
     }
 	
-    public class ScrapeDesc
+    public class ScrapeDesc:ScrapeReq
     {
-	public string Id {get;set;}
-	public string Name {get;set;}
+	public ScrapeDesc()
+	{
+	    Stopwatch = new Stopwatch();
+	    WebClient = new WebClient();
+	    
+	}
+
 	public string DownloadUrl {get;set;}
-	
+	public string Name {get;set;}
 	public Stopwatch Stopwatch {get;set;}
-	
+	public WebClient WebClient {get;set;}
 	public decimal DownloadSpeed;
 	public decimal ProgressPercentage; 
 	public decimal BytesReceived;
 	public decimal FileSize;
+	public TimeSpan Eta;
+	public string FilePath;
+
+		
     }
 }

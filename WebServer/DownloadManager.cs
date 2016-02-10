@@ -24,16 +24,77 @@ namespace Scraper
         public DownloadManager(ILogger logger, IHubContext hub)
         {
 	    _scrapes = new Dictionary<string, Scrape>();
+	    _scrapes.Add("1", new Scrape("new url"){IsDownloadFailed=true, DownloadFailedMessage="failed message", ProgressPercentage="30", BytesReceived="2300", FileSize="6900", Name="film name"});
+	    _scrapes.Add("2", new Scrape("new url"){IsDownloadCanceled=true, ProgressPercentage="30", BytesReceived="2300", FileSize="6900", Name="film name"});
+	    _scrapes.Add("3", new Scrape("new url"){IsDownloadCompleted=true, ProgressPercentage="30", BytesReceived="2300", FileSize="6900", Name="film name"});
+	    _scrapes.Add("4", new Scrape("new url"){IsDownloadInProgress=true, ProgressPercentage="30", BytesReceived="2300", FileSize="6900", Name="film name"});
+	    _scrapes.Add("5", new Scrape("new url"){IsScrapingInProgress=true});
+	    _scrapes.Add("6", new Scrape("new url"){IsScrapingFailed=true, ScrapingFailedMessage="failed message"});
+
 	    _hub = hub;
 	    _logger = logger;
 
 	    _downloader = DownloaderUtil.Downloader.Instance;
 	    _downloader.WebDriverProgress += (s,e) => { _logger.LogInformation(e.Message); };
 	    _downloader.WebDriverError += (s,e) => { _logger.LogError(e.Message); };
-	    _downloader.DownloaderCompleted += (s,e) => { _logger.LogInformation("Progress"); };
-	    _downloader.DownloaderProgress += (s,e) => { _logger.LogInformation("Progress"); };
-	    _downloader.DownloaderError += (s,e) => { _logger.LogError(e.Message); };	    
+	    _downloader.DownloadCompleted += (s,e) => {
+		//_logger.LogInformation("Progress");
+		
+		Scrape scrape = _scrapes[e.ScrapeDesc.Id];
+		scrape.IsDownloadInProgress = false;
+		scrape.IsDownloadCompleted = true;
+		scrape.DownloadSpeed = e.ScrapeDesc.DownloadSpeed.ToString();
+		scrape.ProgressPercentage = e.ScrapeDesc.ProgressPercentage.ToString();
+		scrape.BytesReceived = e.ScrapeDesc.BytesReceived.ToString();
+		scrape.FileSize = e.ScrapeDesc.FileSize.ToString();
+		scrape.Eta = FormatTimeSpan(e.ScrapeDesc.Eta);
+		scrape.SetToCompleted();
+
+		var json = JsonConvert.SerializeObject(scrape);
+		var job = JObject.Parse(json);
+		_hub.Clients.All.broadcastScrapeUpdate(job);
+
+		
+	    };
+	    _downloader.DownloadProgress += (s,e) => {
+		//_logger.LogInformation("Progress");
 	    
+		Scrape scrape = _scrapes[e.ScrapeDesc.Id];
+		scrape.IsDownloadInProgress = true;
+		scrape.DownloadSpeed = e.ScrapeDesc.DownloadSpeed.ToString();
+		scrape.ProgressPercentage = e.ScrapeDesc.ProgressPercentage.ToString();
+		scrape.BytesReceived = e.ScrapeDesc.BytesReceived.ToString();
+		scrape.FileSize = e.ScrapeDesc.FileSize.ToString();
+		scrape.Eta = FormatTimeSpan(e.ScrapeDesc.Eta);
+
+		var json = JsonConvert.SerializeObject(scrape);
+		var job = JObject.Parse(json);
+		_hub.Clients.All.broadcastScrapeUpdate(job);
+	    };
+	    _downloader.DownloadError += (s,e) => {
+		_logger.LogError(e.Message);
+		Scrape scrape = _scrapes[e.ScrapeDesc.Id];
+		scrape.IsDownloadInProgress = false;		
+		scrape.IsDownloadFailed = true;
+		scrape.SetToCompleted();
+		scrape.DownloadFailedMessage = e.Message;
+
+		var json = JsonConvert.SerializeObject(scrape);
+		var job = JObject.Parse(json);
+		_hub.Clients.All.broadcastScrapeUpdate(job);
+	     };	    
+	    
+	    _downloader.DownloadCanceled += (s,e) => {
+		_logger.LogError(e.Message);
+		Scrape scrape = _scrapes[e.ScrapeDesc.Id];
+		scrape.IsDownloadInProgress = false;		
+		scrape.IsDownloadCanceled = true;
+		scrape.SetToCompleted();
+		
+		var json = JsonConvert.SerializeObject(scrape);
+		var job = JObject.Parse(json);
+		_hub.Clients.All.broadcastScrapeUpdate(job);
+	     };
 	    _downloader.ScraperCompleted += (s,e) => {
 		_logger.LogInformation("Scraper completed: Name=" + e.ScrapeDesc.Name + ", Url=" + e.ScrapeDesc.DownloadUrl);
 		
@@ -76,6 +137,11 @@ namespace Scraper
 	public static IEnumerable<Scrape> GetScrapes()
 	{
 	    return _scrapes.Values;
+	}
+
+	private string FormatTimeSpan(TimeSpan span)
+	{
+	    return string.Format("{0:00}:{1:00}:{2:00}", System.Math.Abs(span.Hours), System.Math.Abs(span.Minutes), System.Math.Abs(span.Seconds));
 	}
     }
 }

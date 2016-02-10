@@ -1,6 +1,5 @@
 using System;
 using System.Threading;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNet.Mvc;
@@ -18,9 +17,9 @@ namespace Scraper.Controllers
     public class ScraperController : Controller
     {
 	ILogger<ScraperController> _logger;
-	DownloaderUtil.Downloader _downloader;
-
-	static List<Scrape> _scrapes = new List<Scrape>();/*{
+	
+	//static List<Scrape> _scrapes = new List<Scrape>();
+	/*{
 		new Scrape("test url"){
 		    Name = "Name1",
 		},
@@ -94,8 +93,8 @@ namespace Scraper.Controllers
 	[HttpDelete]
         public string DeleteAll()
         {
-	    _scrapes.Clear();
-	    _downloader.Stop();
+	    //_scrapes.Clear();
+	    DownloaderUtil.Downloader.Instance.Stop();
 	    var hub = GlobalHost.ConnectionManager.GetHubContext<Scraper.Hubs.ChatHub>();
 	    hub.Clients.All.broadcastDeleteAll();
 	    	    
