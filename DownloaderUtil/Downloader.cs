@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Threading;
@@ -84,6 +85,11 @@ namespace DownloaderUtil
 	    }
         }
 
+	private static string CleanFileName(string fileName)
+	{
+	    return Path.GetInvalidFileNameChars().Aggregate(fileName, (current, c) => current.Replace(c.ToString(), string.Empty));
+	}
+	
 	private ScrapeDesc Scrape(ScrapeReq scrapeReq)
 	{
     	    if(_driver == null)
@@ -190,7 +196,10 @@ namespace DownloaderUtil
                 if (CheckIfValidUrl(tmpUrl))
                 {
                     linkLocation = tmpUrl;
-                    SendProgress("link OK");
+                    SendProgress("link OK, removing invalid characters: " + name);
+		    name = CleanFileName(name);
+		    SendProgress("done: " + name);
+		    
 		    scrapeDesc = new ScrapeDesc{Name=name, DownloadUrl=linkLocation, Id=scrapeReq.Id};
                 }
                 else

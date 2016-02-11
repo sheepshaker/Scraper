@@ -23,14 +23,14 @@ namespace Scraper
 
         public DownloadManager(ILogger logger, IHubContext hub)
         {
-	    _scrapes = new Dictionary<string, Scrape>();
+	    _scrapes = new Dictionary<string, Scrape>();/*
 	    _scrapes.Add("1", new Scrape("new url"){IsDownloadFailed=true, DownloadFailedMessage="failed message", ProgressPercentage="30", BytesReceived="2300", FileSize="6900", Name="film name"});
 	    _scrapes.Add("2", new Scrape("new url"){IsDownloadCanceled=true, ProgressPercentage="30", BytesReceived="2300", FileSize="6900", Name="film name"});
 	    _scrapes.Add("3", new Scrape("new url"){IsDownloadCompleted=true, ProgressPercentage="30", BytesReceived="2300", FileSize="6900", Name="film name"});
 	    _scrapes.Add("4", new Scrape("new url"){IsDownloadInProgress=true, ProgressPercentage="30", BytesReceived="2300", FileSize="6900", Name="film name"});
 	    _scrapes.Add("5", new Scrape("new url"){IsScrapingInProgress=true});
 	    _scrapes.Add("6", new Scrape("new url"){IsScrapingFailed=true, ScrapingFailedMessage="failed message"});
-
+*/
 	    _hub = hub;
 	    _logger = logger;
 
