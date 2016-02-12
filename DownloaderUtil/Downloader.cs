@@ -229,6 +229,10 @@ namespace DownloaderUtil
 	    _driver?.Quit();
 	}
 
+	public void Cancel()
+	{
+	}
+
         void SendProgress(string str)
         {
     	    WebDriverProgress?.Invoke(this, new MessageEventArgs
@@ -254,6 +258,7 @@ namespace DownloaderUtil
 	public void Stop()
 	{
 	    _stop = true;
+	    _driver?.Quit();
 	}
 
 	private void DownloadProc()
@@ -311,6 +316,10 @@ namespace DownloaderUtil
 	private void Completed(object sender, AsyncCompletedEventArgs e)
 	{
 	    ScrapeDesc scrapeDesc = (ScrapeDesc)e.UserState;
+	    
+	    scrapeDesc.WebClient.DownloadFileCompleted -= Completed;
+	    scrapeDesc.WebClient.DownloadProgressChanged -= ProgressChanged;
+	    
 	    if (e.Error != null)
 	    {
     		string error = e.Error.ToString();
@@ -329,9 +338,6 @@ namespace DownloaderUtil
 	    
 	    scrapeDesc.Stopwatch.Stop();
 	    scrapeDesc.WebClient.Dispose();
-
-	    scrapeDesc.WebClient.DownloadFileCompleted -= Completed;
-	    scrapeDesc.WebClient.DownloadProgressChanged -= ProgressChanged;
 	}
 
 	private void ProgressChanged(object sender, DownloadProgressChangedEventArgs e)

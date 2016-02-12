@@ -13,152 +13,128 @@
   <head>
 <script>
 
+(function(){
+$.connection.hub.start().done(function () {
+                    $('#connectionStatus').text('Connected');
+                    console.log('Now connected, connection ID =' + $.connection.hub.id);
+                });
+})();
 
 var app = angular.module('myApp', []);
-app.controller('GetAllScrapes', function($scope, $http, $rootScope) {
-  $rootScope.scrapes = [];
-    $http.get('http://82.14.248.46:8010/api/Scraper')
-  .then(function(response) {
-      $rootScope.scrapes = response.data;
-	//alert($rootScope.scrapes);
-  });
+app.controller('ScrapesController', function($scope, $http, $rootScope) {
+$scope.scrapes = [];
+(function(){
+    
+console.log("getting all scrapes");
+    $http.get('http://82.14.248.46:8010/api/Scraper/GetAllScrapes')
+    .then(function(response) {
+	$scope.scrapes = response.data;
+    });
+})();
+
+$scope.AddScrape = function () {
+    var config = {
+	headers : {
+    	    'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8;'
+            }
+	}
+
+    $http.post("http://82.14.248.46:8010/api/Scraper/AddScrapePost","=" + $scope.formUrl, config)
+            .then(function (response) {
+                $scope.PostDataResponse = response.data;
+            });
+        };
+
+$scope.DeleteAllScrapes = function () {
+        $http.delete("http://82.14.248.46:8010/api/Scraper/DeleteAll")
+            .then(function (response) {
+                $scope.PostDataResponse = response.data;
+            });
+        };
+
+$scope.CancelScrape = function (scrape){
+    console.log("cancel scrape: " + scrape.Id);
+    var config = {
+	headers : {
+    	    'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8;'
+            }
+	}
+    $http.post("http://82.14.248.46:8010/api/Scraper/CancelScrapePost","=" + scrape.Id, config);
+}
+/*
+$scope.ScrapesUpdate = function (scrapeArray) {
+                 // Add the message to the page.
+ 		//var cohnt =  JSON.parse(scrapeArray).length
+         	//console.log("got an update " + scrapeArray + " count = " + cohnt);
+ 		//var scrapez = $rootScope.scrapes;
+ 		//console.log(scrapez[0]);
+ 		for(i=0; i < scrapeArray.length; i++)
+ 		{
+ 		    for(j=0; j < $scope.scrapes.length; j++)
+ 		    {
+ 			if(scrapeArray[i].Id == $scope.scrapes[j].Id)
+ 			{
+ 			    //$rootScope.scrapes[j]['Progress'] = "xxx";
+ 			    //console.log("updated " + j + " from " + $rootScope.scrapes[j].Progress + " to " + scrapeArray[i].Progress);
+ 			    $scope.scrapes[j] = scrapeArray[i];
+ 			    //$rootScope.scrapes.splice(j, 1, scrapeArray[i]);
+ 			}
+ 		    }
+ 		}
+}*/
+ 
+
 $scope.SecondsTohhmmss = function (totalSeconds) {
+	//console.log(totalSeconds);
+	
+	if(totalSeconds == Infinity || isNaN(totalSeconds))
+	    return 0;
+
 	return new Date(totalSeconds * 1000).toISOString().substr(11, 8);
     }
-}
-);
 
-app.controller('TitleController', function($scope){ $scope.title = "Scrapes:"; });
-
-app.controller("AddNewScrape", function ($scope, $http) {
-
-        $scope.SendData = function () {
-	    
-            var config = {
-                headers : {
-                    'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8;'
-                }
-            }
-
-            $http.post("http://82.14.248.46:8010/api/Scraper","=" + $scope.formUrl, config)
-            .then(function (response) {
-                $scope.PostDataResponse = response.data;
-            });
-        };
-    });
-
-app.controller("DeleteAllScrapes", function ($scope, $http, $rootScope) {
-
-        $scope.SendData = function () {
-	    
-            $http.delete("http://82.14.248.46:8010/api/Scraper")
-            .then(function (response) {
-		//$rootScope.scrapes.length = 0;
-                $scope.PostDataResponse = response.data;
-            });
-        };
-    });
-
-app.controller("signalrController", function ($rootScope){
-
-// Reference the auto-generated proxy for the hub.
-            var chat = $.connection.chatHub;
-            // Create a function that the hub can call back to display messages.
-            chat.client.addNewMessageToPage = function (name, message) {
-                // Add the message to the page.
-                $('#discussion').append('<li><strong>' + htmlEncode(name)
-                    + '</strong>: ' + htmlEncode(message) + '</li>');
-            };
-
-        chat.client.broadcastTime = function (message) {
-                // Add the message to the page.
-                //$('#discussion').append('<li><strong>' + htmlEncode(message) + '</li>');
-            };
+        var chat = $.connection.chatHub;
 	
 	chat.client.broadcastDeleteAll = function () {
-                // Add the message to the page.
-        	//alert("delete all");
 		console.log("delete all");
-		$rootScope.scrapes.length = 0;
+		$scope.scrapes.length = 0;
 	    };
 
 	chat.client.broadcastScrapeAdded = function (scrape) {
-                // Add the message to the page.
-        	//alert(scrape);
-		$rootScope.scrapes.push(scrape);
+                console.log("scrape added");
+		//$rootScope.$apply(function(){
+		$scope.scrapes.push(scrape);//});
 	    };
-/*
-	chat.client.broadcastScraperCompleted = function (scrape) {
-	    for(j=0; j < $rootScope.scrapes.length; j++)
-	    {
-		if(scrape.Id == $rootScope.scrapes[j].Id)
-		{
-		    $rootScope.scrapes[j] = scrape;
-		}
-	    }
-
-	    $rootScope.$apply();
-	};
-
-	chat.client.broadcastScraperFailed = function (scrape) {
-	    for(j=0; j < $rootScope.scrapes.length; j++)
-	    {
-		if(scrape.Id == $rootScope.scrapes[j].Id)
-		{
-		    $rootScope.scrapes[j] = scrape;
-		}
-	    }
-
-	    $rootScope.$apply();
-	};*/
 
 	chat.client.broadcastScrapeUpdate = function (scrape) {
-	    for(j=0; j < $rootScope.scrapes.length; j++)
+	    for(j=0; j < $scope.scrapes.length; j++)
 	    {
-		if(scrape.Id == $rootScope.scrapes[j].Id)
+		if(scrape.Id == $scope.scrapes[j].Id)
 		{
-		    $rootScope.scrapes[j] = scrape;
+		    $scope.scrapes[j] = scrape;
 		}
 	    }
 
-	    $rootScope.$apply();
+	    $scope.$apply();
 	};
 
     	chat.client.broadcastScrapesUpdate = function (scrapeArray) {
+		console.log("scrapes update");
 		for(i=0; i < scrapeArray.length; i++)
 		{
-		    for(j=0; j < $rootScope.scrapes.length; j++)
+		    for(j=0; j < $scope.scrapes.length; j++)
 		    {
-			if(scrapeArray[i].Id == $rootScope.scrapes[j].Id)
+			if(scrapeArray[i].Id == $scope.scrapes[j].Id)
 			{
-			    $rootScope.scrapes[j] = scrapeArray[i];
+			    $scope.scrapes[j] = scrapeArray[i];
 			}
 		    }
 		}
 
-		$rootScope.$apply();
-	    };
-
-            // Get the user name and store it to prepend to messages.
-            $('#displayname').val(/*prompt('Enter your name:', '')*/"jacko");
-            // Set initial focus to message input box.
-            $('#message').focus();
-            // Start the connection.
-            $.connection.hub.start().done(function () {
-                $('#sendmessage').click(function () {
-                    // Call the Send method on the hub.
-                    chat.server.send($('#displayname').val(), $('#message').val());
-                    // Clear text box and reset focus for next comment.
-                    $('#message').val('').focus();
-                });
-            });
-});
-
-function htmlEncode(value) {
-            var encodedValue = $('<div />').text(value).html();
-            return encodedValue;
-        }
-
+		$scope.$apply();
+	    };	
+    }
+);
 
 </script>
 <LINK REL=StyleSheet HREF="css/masonry-grid.css" TYPE="text/css">
@@ -166,21 +142,21 @@ function htmlEncode(value) {
 <LINK REL=StyleSheet HREF="css/spinner.css" TYPE="text/css">
 
   </head>
-  <body ng-app="myApp">
-<div ng-controller="signalrController"></div>
-<div ng-controller="AddNewScrape">
+  <body ng-app="myApp" ng-controller="ScrapesController">
+
+<div id="connectionStatus">Connecting...</div>
+
+<div>
     <p>Url: <input type="text" name="formUrl" ng-model="formUrl" required /></p>
-    <button ng-click="SendData()">Submit</button>
-    <hr />
-    {{ PostDataResponse }}
+    <button ng-click="AddScrape()">Submit</button>
+    <hr/>
 </div>
-<div ng-controller="DeleteAllScrapes">
-    <button ng-click="SendData()">Delete all</button>
-    <hr />
-    {{ PostDataResponse }}
+<div>
+    <button ng-click="DeleteAllScrapes()">Delete all</button>
+    <hr/>
 </div>
 
-<div class="grid" ng-controller="GetAllScrapes">
+<div class="grid" >
     <div ng-repeat="model in scrapes | orderBy:'DateStarted':true">	
 	<div ng-if="model.IsScrapingInProgress" class="grid-item-scraping-in-progress grid-item--width2 grid-item--height3">
 	    <div class="loader"></div>
@@ -198,16 +174,14 @@ function htmlEncode(value) {
 	    <h2>{{model.Name}}</h2>
 	    <div id="progress" class="graph">
 		<div id="bar" style="width:{{model.ProgressPercentage}}%">
-		    <p>{{model.ProgressPercentage}}%	{{model.BytesReceived/1024/1024 | number:2}}MB / {{model.FileSize/1024/1024 | number:2}}MB</p>
+		    <p>{{model.ProgressPercentage}}%  {{model.DownloadSpeed/1024|number:2}}KB/s - {{model.BytesReceived/1024/1024 | number:2}}MB of {{model.FileSize/1024/1024 | number:2}}MB, {{SecondsTohhmmss((model.FileSize - model.BytesReceived)/model.DownloadSpeed)}} left</p>
 		</div>
 	    </div>
 	    <a href="{{model.DownloadUrl}}">Download Url</a>
 	    <a href="{{model.InputUrl}}">Input Url</a>
 	    <p>Started {{model.DateStarted}}</p>
-	    <p>Speed {{model.DownloadSpeed/1024 | number:2}} KB/s</p>
-	    <!--<p>Remaining {{(model.FileSize - model.BytesReceived)/model.DownloadSpeed/60 | number:2}} minutes</p>
-	-->    <p>Remaining {{SecondsTohhmmss((model.FileSize - model.BytesReceived)/model.DownloadSpeed)}} time</p>
-	
+	    <p>Elapsed {{model.Elapsed}}</p>
+	    <button ng-click="CancelScrape(model)">Cancel</button>
 	</div>
 	<div ng-if="model.IsDownloadCompleted" class="grid-item-download-completed grid-item--width2 grid-item--height3">
 	    <h2>{{model.Name}}</h2>
@@ -222,7 +196,7 @@ function htmlEncode(value) {
 	<div ng-if="model.IsDownloadCanceled" class="grid-item-download-canceled grid-item--width2 grid-item--height3">
 	    <div id="progress" class="graph">
 		<div id="bar" style="width:{{model.ProgressPercentage}}%">
-		    <p>{{model.ProgressPercentage}}% {{model.BytesReceived}}/{{model.FileSize}}</p>
+		    <p>{{model.ProgressPercentage}}%  {{model.DownloadSpeed/1024|number:2}}KB/s - {{model.BytesReceived/1024/1024 | number:2}}MB of {{model.FileSize/1024/1024 | number:2}}MB, {{SecondsTohhmmss((model.FileSize - model.BytesReceived)/model.DownloadSpeed)}} left</p>
 		</div>
 	    </div>
 	    <h2>{{model.Name}}</h2>
@@ -230,40 +204,25 @@ function htmlEncode(value) {
 	    <a href="{{model.DownloadUrl}}">Download Url</a>
 	    <a href="{{model.InputUrl}}">Input Url</a>
 	    <p>Started {{model.DateStarted}}</p>
-	    <p>Remaining {{model.Eta}}</p>
 	    <p>Completed {{model.DateCompleted}}</p>
 	    <p>Elapsed {{model.Elapsed}}</p>
 	</div>
 	<div ng-if="model.IsDownloadFailed" class="grid-item-download-failed grid-item--width2 grid-item--height3">
 	    <div id="progress" class="graph">
 		<div id="bar" style="width:{{model.ProgressPercentage}}%">
-		    <p>{{model.ProgressPercentage}}% {{model.BytesReceived}}/{{model.FileSize}}</p>
+		    <p>{{model.ProgressPercentage}}%  {{model.DownloadSpeed/1024|number:2}}KB/s - {{model.BytesReceived/1024/1024 | number:2}}MB of {{model.FileSize/1024/1024 | number:2}}MB, {{SecondsTohhmmss((model.FileSize - model.BytesReceived)/model.DownloadSpeed)}} left</p>
 		</div>
 	    </div>
 	    <h2>{{model.Name}}</h2>
-	    <p>Download failed</p>
-	    <p>{{model.DownloadFailedMessage}}</p>
+	    <p>Download failed: {{model.DownloadFailedMessage}}</p>
 	    <a href="{{model.DownloadUrl}}">Download Url</a>
 	    <a href="{{model.InputUrl}}">Input Url</a>
 	    <p>Started {{model.DateStarted}}</p>
-	    <p>Remaining {{model.Eta}}</p>
-	    <p>Completed {{model.DateCompleted}}</p>
+	    <p>Canceled {{model.DateCompleted}}</p>
 	    <p>Elapsed {{model.Elapsed}}</p>
 	</div>
     </div>
 </div>
-<!--
-    <h2 id="username">Chat</h2>
-    <div id="userStat"> </div> 
-    <div class="container">
-        <input type="text" id="message"/>
-        <input type="button" id="sendmessage" value="Send"/>
-        
-	<input type="hidden" id="displayname"/>
-        <ul id="discussion"></ul>
-        <ul id="time"></ul>
-    </div>
--->
 <script>
 
 

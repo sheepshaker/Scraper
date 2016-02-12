@@ -73,6 +73,7 @@ namespace Scraper
 	    _downloader.DownloaderError += (s,e) => { _logger.LogError(e.Message); };
 	    */
 	    //DownloaderUtil.Downloader.Instance.Go("http://kinoman.tv/film/karbala-2");
+	    Console.CancelKeyPress += (s,e) => { _logger.LogInformation("CTRL+C detected - shutting down"); _dm.Stop(); _logger.LogInformation("Press CTRL+C again");};
         }
 
         // Entry point for the application.

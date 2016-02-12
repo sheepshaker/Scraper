@@ -1,11 +1,12 @@
 body {
                 /* Demo only */
                 font-family: Arial, sans-serif;
-                padding: 0 10%;
+                font-size: 12px;
+		padding: 0 10%;
                 background-color: #eaeaea;
             }
             .graph {
-                width: 300px; /* width and height are arbitrary, just make sure the #bar styles are changed accordingly */
+                width: 316px; /* width and height are arbitrary, just make sure the #bar styles are changed accordingly */
                 height: 20px;
                 border: 1px solid #888; 
                 background: rgb(168,168,168);

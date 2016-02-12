@@ -1,4 +1,5 @@
 using System;
+using DownloaderUtil;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
@@ -31,7 +32,13 @@ namespace Scraper.Models
 	{
 	    get
 	    {
-		return FormatTimeSpan(_dateCompleted - _dateStarted);
+		var elapsed = string.Empty;
+		if(IsDownloadInProgress)
+		    elapsed = FormatTimeSpan(DateTime.Now - _dateStarted); 
+		else
+		    elapsed =  FormatTimeSpan(_dateCompleted - _dateStarted);
+		
+		return elapsed;
 	    } 
 	}
 
@@ -50,7 +57,7 @@ namespace Scraper.Models
 	public bool IsDownloadInProgress { get; set; }
 	public bool IsScrapingInProgress { get; set; }
 	public bool IsScrapingFailed {get;set;}
-	public string ScrapingFailedMessage {get;set;}	
+	public string ScrapingFailedMessage {get;set;}
 
 	public static string FormatTimeSpan(TimeSpan span)
 	{
@@ -61,24 +68,32 @@ namespace Scraper.Models
 	{
 	    _dateCompleted = dateTime;
 	}
-	
-	public void SetToCompleted()
+
+	private ScrapeDesc _scrapeDesc;
+	public void SetDownload(ScrapeDesc scrapeDesc)
 	{
-	    //IsDownloadInProgress = false;
-	    _dateCompleted = DateTime.Now;
-	    //DownloadSpeed = "0";
+	    _scrapeDesc = scrapeDesc;
 	}
 
 	public void Cancel()
 	{
-	    IsDownloadCanceled = true;
-	    SetToCompleted();
-	}
-
-	public void Fail()
-	{
-	    IsDownloadFailed = true;
-	    SetToCompleted();
+	    if(IsDownloadInProgress)
+	    {
+		IsDownloadInProgress = false;
+		IsDownloadCanceled = true;
+		try
+		{
+		    _scrapeDesc?.WebClient.CancelAsync();
+		}
+		catch(Exception ex)
+		{
+		    throw new Exception("cancel exception! " + ex);
+		}
+	    }
+	    else
+	    {
+		throw new Exception("Scrape is not in progress");
+	    }
 	}	
 
 	private void Download(string url, string outputFile)
