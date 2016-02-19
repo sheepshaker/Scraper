@@ -65,15 +65,7 @@ namespace Scraper
 	    
 	    _dm = new DownloadManager(_logger, GlobalHost.ConnectionManager.GetHubContext<Scraper.Hubs.ChatHub>());
 	    
-	    /*
-	    _downloader = DownloaderUtil.Downloader.Instance;
-	    _downloader.WebDriverProgress += (s,e) => { _logger.LogInformation(e.Message); };
-	    _downloader.WebDriverError += (s,e) => { _logger.LogError(e.Message); };
-	    _downloader.DownloaderProgress += (s,e) => { _logger.LogInformation("Progress"); };
-	    _downloader.DownloaderError += (s,e) => { _logger.LogError(e.Message); };
-	    */
-	    //DownloaderUtil.Downloader.Instance.Go("http://kinoman.tv/film/karbala-2");
-	    Console.CancelKeyPress += (s,e) => { _logger.LogInformation("CTRL+C detected - shutting down"); _dm.Stop(); _logger.LogInformation("Press CTRL+C again");};
+	    Console.CancelKeyPress += (s,e) => { _logger.LogInformation("CTRL+C detected - shutting down"); _dm.Stop(); };
         }
 
         // Entry point for the application.

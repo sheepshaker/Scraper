@@ -40,8 +40,8 @@ namespace Scraper
 	    _logger = logger;
 
 	    _downloader = DownloaderUtil.Downloader.Instance;
-	    _downloader.WebDriverProgress += (s,e) => { _logger.LogInformation(e.Message); };
-	    _downloader.WebDriverError += (s,e) => { _logger.LogError(e.Message); };
+	    _downloader.ScraperProgress += (s,e) => { _logger.LogInformation(e.Message); };
+	    //_downloader.WebDriverError += (s,e) => { _logger.LogError(e.Message); };
 	    _downloader.DownloadCompleted += (s,e) => {
 		//_logger.LogInformation("Progress");
 		
@@ -174,9 +174,29 @@ namespace Scraper
 	    //_logger.LogInformation("tick");
 	    var coll = _scrapes.Values.Where(s => s.IsDownloadInProgress).ToArray();
 	    //_logger.LogInformation("tick " + coll.Count() + " " + coll.FirstOrDefault()?.Id);
-	    var json = JsonConvert.SerializeObject(coll);
-	    var jarray = JArray.Parse(json);
-	    _hub.Clients.All.broadcastScrapesUpdate(jarray);
+	    if(coll.Any())
+	    {
+		var json = JsonConvert.SerializeObject(coll);
+		var jarray = JArray.Parse(json);
+		_hub.Clients.All.broadcastScrapesUpdate(jarray);
+	    }
+
+	    var driveInfo = new System.IO.DriveInfo(@"/media/MEDIA");
+	    _hub.Clients.All.broadcastDiskSpaceInfo(BytesToString(driveInfo.AvailableFreeSpace) + " of " + BytesToString(driveInfo.TotalSize));
+	}
+
+	static string BytesToString(long byteCount)
+	{
+	    string[] suf = { "B", "KB", "MB", "GB", "TB", "PB", "EB" }; //Longs run out around EB
+	
+	    if (byteCount == 0)
+    		return "0" + suf[0];
+	    
+	    long bytes = Math.Abs(byteCount);
+	    int place = Convert.ToInt32(Math.Floor(Math.Log(bytes, 1024)));
+	    //double num = Math.Round(bytes / Math.Pow(1024, place), 2);
+	    double num = bytes / Math.Pow(1024, place);
+	    return string.Format("{0:N2} {1}", (Math.Sign(byteCount) * num), suf[place]);
 	}
 
 	public void Stop()
@@ -208,7 +228,7 @@ namespace Scraper
 	    }
 	}
 
-	public static void Go(Scrape scrape)
+	public static void Go(Scrape scrape, bool goDirect = false)
 	{
 	    scrape.IsScrapingInProgress = true;
 	    _scrapes.Add(scrape.Id, scrape);
@@ -216,7 +236,7 @@ namespace Scraper
 	    var json = JsonConvert.SerializeObject(scrape);
 	    _hub.Clients.All.broadcastScrapeAdded(JObject.Parse(json));
 	    
-	    _downloader.Go(scrape.Id, scrape.InputUrl);
+	    _downloader.Go(scrape.Id, scrape.InputUrl, goDirect);
 	}
 
 	public static IEnumerable<Scrape> GetScrapes()

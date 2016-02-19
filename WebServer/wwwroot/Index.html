@@ -45,6 +45,19 @@ $scope.AddScrape = function () {
             });
         };
 
+$scope.AddDirectScrape = function () {
+    var config = {
+	headers : {
+    	    'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8;'
+            }
+	}
+
+    $http.post("http://82.14.248.46:8010/api/Scraper/AddDirectScrapePost","=" + $scope.formUrl, config)
+            .then(function (response) {
+                $scope.PostDataResponse = response.data;
+            });
+        };
+
 $scope.DeleteAllScrapes = function () {
         $http.delete("http://82.14.248.46:8010/api/Scraper/DeleteAll")
             .then(function (response) {
@@ -60,29 +73,7 @@ $scope.CancelScrape = function (scrape){
             }
 	}
     $http.post("http://82.14.248.46:8010/api/Scraper/CancelScrapePost","=" + scrape.Id, config);
-}
-/*
-$scope.ScrapesUpdate = function (scrapeArray) {
-                 // Add the message to the page.
- 		//var cohnt =  JSON.parse(scrapeArray).length
-         	//console.log("got an update " + scrapeArray + " count = " + cohnt);
- 		//var scrapez = $rootScope.scrapes;
- 		//console.log(scrapez[0]);
- 		for(i=0; i < scrapeArray.length; i++)
- 		{
- 		    for(j=0; j < $scope.scrapes.length; j++)
- 		    {
- 			if(scrapeArray[i].Id == $scope.scrapes[j].Id)
- 			{
- 			    //$rootScope.scrapes[j]['Progress'] = "xxx";
- 			    //console.log("updated " + j + " from " + $rootScope.scrapes[j].Progress + " to " + scrapeArray[i].Progress);
- 			    $scope.scrapes[j] = scrapeArray[i];
- 			    //$rootScope.scrapes.splice(j, 1, scrapeArray[i]);
- 			}
- 		    }
- 		}
-}*/
- 
+} 
 
 $scope.SecondsTohhmmss = function (totalSeconds) {
 	//console.log(totalSeconds);
@@ -118,6 +109,10 @@ $scope.SecondsTohhmmss = function (totalSeconds) {
 	    $scope.$apply();
 	};
 
+	chat.client.broadcastDiskSpaceInfo = function (diskSpaceInfo) {	    
+	    $('#diskSpaceInfo').text('Disk space: ' + diskSpaceInfo);
+	};
+
     	chat.client.broadcastScrapesUpdate = function (scrapeArray) {
 		console.log("scrapes update");
 		for(i=0; i < scrapeArray.length; i++)
@@ -146,9 +141,12 @@ $scope.SecondsTohhmmss = function (totalSeconds) {
 
 <div id="connectionStatus">Connecting...</div>
 
+<div id="diskSpaceInfo"></div>
+
 <div>
     <p>Url: <input type="text" name="formUrl" ng-model="formUrl" required /></p>
     <button ng-click="AddScrape()">Submit</button>
+    <!--<button ng-click="AddDirectScrape()">Submit Direct</button>-->
     <hr/>
 </div>
 <div>
@@ -167,7 +165,7 @@ $scope.SecondsTohhmmss = function (totalSeconds) {
 	<div ng-if="model.IsScrapingFailed" class="grid-item-scraping-failed grid-item--width2 grid-item--height3">
 	    <h1>Scraping failed</h1>
 	    <p>Error: {{model.ScrapingFailedMessage}}</p>
-	    <p>Input Url {{model.InputUrl}}</p>
+	    <a href="{{model.InputUrl}}">Input Url</a>
 	    <p>Started {{model.DateStarted}}</p>
 	</div>
         <div ng-if="model.IsDownloadInProgress" class="grid-item-download-in-progress grid-item--width2 grid-item--height3">

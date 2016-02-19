@@ -54,6 +54,22 @@ namespace Scraper.Controllers
 	}
 
 	[HttpPost]
+	public IActionResult AddDirectScrapePost(string inputUrl)
+	{
+	    if(string.IsNullOrEmpty(inputUrl))
+	    {	
+		return Content("Content is null or empty!");
+	    }
+
+	    _logger.LogInformation("New direct url: " + inputUrl);
+	    
+	    Scrape scrape = new Scrape(inputUrl);
+	    DownloadManager.Go(scrape, true);
+	    
+	    return Content("Direct download enqueued for " + scrape.InputUrl + ", id=" + scrape.Id );
+	}
+
+	[HttpPost]
 	public IActionResult CancelScrapePost(string scrapeId)
 	{
 	    if(string.IsNullOrEmpty(scrapeId))

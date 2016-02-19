@@ -17,18 +17,18 @@ namespace DownloaderUtil
 {
     public sealed class Downloader
     {
-	public event EventHandler<MessageEventArgs> WebDriverProgress;
-	public event EventHandler<MessageEventArgs> WebDriverError;
+	public event EventHandler<ScraperCompletedEventArgs> ScraperCompleted;
+	public event EventHandler<MessageEventArgs> ScraperProgress;
+	public event EventHandler<ScraperFailedEventArgs> ScraperFailed;
 	public event EventHandler<DownloadEventArgs> DownloadCompleted;
 	public event EventHandler<DownloadEventArgs> DownloadProgress;
 	public event EventHandler<MessageEventArgs> DownloadError;
 	public event EventHandler<MessageEventArgs> DownloadCanceled;
-	public event EventHandler<ScraperCompletedEventArgs> ScraperCompleted;
-	public event EventHandler<ScraperFailedEventArgs> ScraperFailed;
 	
 	const string TempOutputPath = "/media/MEDIA/ScraperDownload/temp";
         const string OutputPath = "/media/MEDIA/ScraperDownload";
 
+	Dictionary<string, IScraper> _scrapers;
 	IWebDriver _driver;
 	Thread _downloadProc;
 	Queue<ScrapeReq> _queue;
@@ -53,8 +53,16 @@ namespace DownloaderUtil
 
 	    _queue  = new Queue<ScrapeReq>();
 	    
-	    //_webClient = new WebClient();
-	    	
+	    _scrapers = new Dictionary<string, IScraper>();
+	    _scrapers.Add("http://www.kinoman.tv", new KinomanScraper());
+	    _scrapers.Add("http://www.watchseries.li", new WatchSeriesScraper());
+
+	    foreach(var scraper in _scrapers.Values)
+	    {
+		scraper.WebDriverError += OnWebDriverProgress;
+		scraper.WebDriverProgress += OnWebDriverProgress;
+	    }
+
 	    _downloadProc = new Thread(DownloadProc);
 	    _downloadProc.Start();	    	
     	}
@@ -71,9 +79,9 @@ namespace DownloaderUtil
     	    internal static readonly Downloader instance = new Downloader();
 	}
 
-        public void Go(string id, string inputUrl)
+        public void Go(string id, string inputUrl, bool goDirect = false)
         {
-	    ScrapeReq scrapeReq = new ScrapeReq{Id = id, InputUrl=inputUrl};
+	    ScrapeReq scrapeReq = new ScrapeReq{Id = id, InputUrl=inputUrl, GoDirect=goDirect};
 
 	    if(CheckIfValidUrl(inputUrl) == false)
 	    {
@@ -84,169 +92,10 @@ namespace DownloaderUtil
 		_queue.Enqueue(scrapeReq);
 	    }
         }
-
-	private static string CleanFileName(string fileName)
-	{
-	    return Path.GetInvalidFileNameChars().Aggregate(fileName, (current, c) => current.Replace(c.ToString(), string.Empty));
-	}
 	
-	private ScrapeDesc Scrape(ScrapeReq scrapeReq)
-	{
-    	    if(_driver == null)
-	    {
-		SendProgress("WEB Driver is null!");
-		
-		throw new Exception();
-	    }
-	    
-	    ScrapeDesc scrapeDesc = null;    
-	    SendProgress("Scraping url: " + scrapeReq.InputUrl);
-	        
-            string linkLocation = string.Empty;
-	    string name = string.Empty;
-            DateTime startTime = DateTime.Now;
-	    List<string> errors = new List<string>();
-
-            try
-            {
-
-                SendProgress("Navigating...");
-                _driver.Navigate().GoToUrl(scrapeReq.InputUrl);
-                
-                try
-                {
-		    name = _driver.FindElement(By.XPath("//span[@itemprop='name']")).Text;
-                    SendProgress("Found name: " + name);
-		    IWebElement query = _driver.FindElement(By.XPath("//div[@class='player-wrapper']/a"));
-                    SendProgress("Click 1");
-                    query.Click();
-                    SendProgress("OK");
-                }
-                catch (Exception ex)
-                {
-		    errors.Add("Error1");
-                    SendError("Error1", ex.ToString(), _driver?.PageSource);
-                }
-
-                WebDriverWait wait = new WebDriverWait(_driver, TimeSpan.FromSeconds(10));
-                var element = wait.Until((d) => { return d.FindElement(By.XPath("//button[@class='btn btn-primary']")); });
-
-                try
-                {
-                    SendProgress("Click 2");
-                    //var html = element.GetAttribute("outerHTML");
-                    //html = element.GetAttribute("innerHTML");
-                    element.Click();
-                    SendProgress("OK");
-                }
-                catch (Exception ex)
-                {
-                    SendError("Warning", ex.ToString(), _driver?.PageSource);
-                }
-
-                try
-                {
-                    wait = new WebDriverWait(_driver, TimeSpan.FromSeconds(10));
-                    element = wait.Until((d) => { return d.FindElement(By.ClassName("player-wrapper")); });
-                    var temp = element;
-                    var iframe = wait.Until((d) => { return temp.FindElement(By.TagName("iframe")); });
-                    var link = iframe.GetAttribute("src");
-
-                    SendProgress("checking if link is valid: " + link);
-
-                    if (CheckIfValidUrl(link))
-                    {
-                        SendProgress("Link is OK. Navigating...");
-                        _driver.Navigate().GoToUrl(link);
-                    }
-                    else
-                    {
-                        SendProgress("Invalid link...");
-                        throw new Exception("Invalid link");
-                    }
-                }
-                catch (Exception ex)
-                {
-		    errors.Add("Error2");
-                    SendError("Error2", ex.ToString(), _driver?.PageSource);
-                }
-
-                wait = new WebDriverWait(_driver, TimeSpan.FromSeconds(10));
-                var tmpUrl = wait.Until(d => { return d.FindElement(By.XPath("//div[@id='playerVidzer']/a")).GetAttribute("href"); });
-
-                int index = tmpUrl.LastIndexOf("http", StringComparison.InvariantCulture);
-                SendProgress("Got link: " + tmpUrl);
-
-                if (index > 0)
-                {
-                    SendProgress("Link corrupted, fixing...");
-
-                    tmpUrl = tmpUrl.Remove(0, index);
-                }
-                else
-                {
-                    SendProgress("Link not corrupted - OK");
-                }
-
-                SendProgress("UrlDecode...");
-
-                tmpUrl = System.Net.WebUtility.UrlDecode(tmpUrl);
-
-                SendProgress("Check if link is valid: " + tmpUrl);
-                if (CheckIfValidUrl(tmpUrl))
-                {
-                    linkLocation = tmpUrl;
-                    SendProgress("link OK, removing invalid characters: " + name);
-		    name = CleanFileName(name);
-		    SendProgress("done: " + name);
-		    
-		    scrapeDesc = new ScrapeDesc{Name=name, DownloadUrl=linkLocation, Id=scrapeReq.Id};
-                }
-                else
-                {
-                    throw new Exception("Invalid link");
-                }
-            }
-            catch (Exception ex)
-            {
-		errors.Add("Error3");
-                SendError("Error3", ex.ToString(), _driver?.PageSource);
-            }
-            
-            SendProgress("\nlink : \n" + linkLocation == string.Empty ? "link not found" : linkLocation);
-            SendProgress("total time = " + new DateTime((DateTime.Now - startTime).Ticks).ToString("HH:mm:ss"));
-
-	    if(scrapeDesc != null)
-		ScraperCompleted?.Invoke(this, new ScraperCompletedEventArgs{ ScrapeDesc = scrapeDesc });
-	    else
-		ScraperFailed?.Invoke(this, new ScraperFailedEventArgs{ ScrapeReq = scrapeReq, Message = string.Join(",", errors.ToArray()) });
-
-	    return scrapeDesc;
-	}
-
-	public void Close()
-	{
-	    _driver?.Quit();
-	}
-
-	public void Cancel()
-	{
-	}
-
-        void SendProgress(string str)
+        void OnWebDriverProgress(object source, MessageEventArgs e)
         {
-    	    WebDriverProgress?.Invoke(this, new MessageEventArgs
-	    {
-		Message = str
-	    });
-	    //_logger.LogError(str);
-	}
-
-        void SendError(string param, string str, string pageSource)
-        {
-	    WebDriverError?.Invoke(this, new MessageEventArgs{
-		Message = param + ": " + str
-	    });
+    	    ScraperProgress?.Invoke(source, e);
 	}
 
         bool CheckIfValidUrl(string link)
@@ -259,52 +108,64 @@ namespace DownloaderUtil
 	{
 	    _stop = true;
 	    _driver?.Quit();
+	    
+	    foreach(var scraper in _scrapers.Values)
+	    {
+		scraper.WebDriverError -= OnWebDriverProgress;
+		scraper.WebDriverProgress -= OnWebDriverProgress;
+	    }
 	}
 
 	private void DownloadProc()
 	{
-	    //SendProgress("Downloader thread is running " + Thread.CurrentThread.ManagedThreadId);
-	    
 	    while(_stop == false)
 	    {
-		//SendProgress("+SIZE = " + _queue.Count + " " +  Thread.CurrentThread.ManagedThreadId);
-		
 		if(_queue.Count > 0)
 		{
-		    
 		    var scrapeReq = _queue.Dequeue();
-		    //SendProgress("dequeued SIZE = " + _queue.Count + " " +  Thread.CurrentThread.ManagedThreadId);
-		    var scrapeDesc = Scrape(scrapeReq);
+		    ScrapeDesc scrapeDesc = null;
+		    if(scrapeReq.GoDirect == false)
+		    {
+			foreach(var scraperKey in _scrapers.Keys)
+			{
+			    if(scrapeReq.InputUrl.StartsWith(scraperKey))
+			    {
+				scrapeDesc = _scrapers[scraperKey].Scrape(scrapeReq);
+				break;
+			    }
+			}
+
+			if(scrapeDesc != null)
+			    ScraperCompleted?.Invoke(this, new ScraperCompletedEventArgs{ ScrapeDesc = scrapeDesc });
+			else
+			    ScraperFailed?.Invoke(this, new ScraperFailedEventArgs{ ScrapeReq = scrapeReq, Message = "Scraper Failed" });			    
+		    }
+		    else
+		    {	
+			scrapeDesc = new ScrapeDesc{Name=Path.GetRandomFileName(), DownloadUrl=scrapeReq.InputUrl};
+		    }
+			
 		    if(scrapeDesc != null)
 		    {
 			scrapeDesc.WebClient.DownloadFileCompleted += Completed;
 			scrapeDesc.WebClient.DownloadProgressChanged += ProgressChanged;
 			Download(scrapeDesc);
 		    }
-		    //_downloader.Go(url);
-		    //_scrapes.Add(new Scrape(url));
 		}
 		else
 		{
 		    Thread.Sleep(1000);
 		}
-
-		//SendProgress("-SIZE = " + _queue.Count + " " +  Thread.CurrentThread.ManagedThreadId);
 	    }
-
-	    SendProgress("Downloader thread terminated");
 	}
 
 	private void Download(ScrapeDesc scrapeDesc)
 	{
-	    SendProgress("Downloading " + scrapeDesc.Name + " from " + scrapeDesc.DownloadUrl);
-	    
 	    try
 	    {
 		scrapeDesc.FilePath = TempOutputPath + "//" + scrapeDesc.Name;
 		scrapeDesc.Stopwatch.Start();
 		scrapeDesc.WebClient.DownloadFileAsync(new Uri(scrapeDesc.DownloadUrl), scrapeDesc.FilePath, scrapeDesc);
-		//_webClient.DownloadFileAsync(new Uri(scrapeDesc.DownloadUrl), scrapeDesc.FilePath, scrapeDesc);
 	    }
 	    catch(Exception ex)
 	    {
@@ -363,6 +224,7 @@ namespace DownloaderUtil
     {
 	public string Id{get;set;}
 	public string InputUrl {get;set;}
+	public bool GoDirect{get;set;}
     }
 	
     public class ScrapeDesc:ScrapeReq
@@ -371,20 +233,17 @@ namespace DownloaderUtil
 	{
 	    Stopwatch = new Stopwatch();
 	    WebClient = new WebClient();
-	    
 	}
 
 	public string DownloadUrl {get;set;}
 	public string Name {get;set;}
 	public Stopwatch Stopwatch {get;set;}
 	public WebClient WebClient {get;set;}
-	public decimal DownloadSpeed;
-	public decimal ProgressPercentage; 
-	public decimal BytesReceived;
-	public decimal FileSize;
-	public TimeSpan Eta;
-	public string FilePath;
-
-		
+	public decimal DownloadSpeed{get;set;}
+	public decimal ProgressPercentage{get;set;} 
+	public decimal BytesReceived{get;set;}
+	public decimal FileSize{get;set;}
+	public TimeSpan Eta{get;set;}
+	public string FilePath{get;set;}		
     }
 }
