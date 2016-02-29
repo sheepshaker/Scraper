@@ -17,6 +17,14 @@ namespace DownloaderUtil
 {
     public sealed class KinomanScraper : ScraperBase
     {
+	public static string Key
+	{
+	    get
+	    {
+		return "http://www.kinoman.tv";
+    	    }
+	}
+
 	public override ScrapeDesc Scrape(ScrapeReq scrapeReq)
 	{
     	    if(_driver == null)

@@ -18,6 +18,14 @@ namespace DownloaderUtil
 {
     public sealed class WatchSeriesScraper : ScraperBase
     {
+	public static string Key
+	{
+	    get
+	    {
+		return "http://www.watchseries.li";
+	    }
+	}
+
 	public override ScrapeDesc Scrape(ScrapeReq scrapeReq)
 	{
     	    if(_driver == null)
@@ -53,12 +61,14 @@ namespace DownloaderUtil
 		    SendProgress("Found Name: " + name);
 
 		    var frames = _driver.FindElements(By.TagName("iframe"));
-                    
+                    SendProgress("Found " + frames.Count() + " frames");
+
 		    for (int i = 0; i < frames.Count(); i++)
                     {
                         _driver.SwitchTo().Frame(i);
                         //WriteDebug("OK", "OK", driver.TakeScreenshot(), driver.PageSource);
-
+			SendProgress("frame: " + i);
+			
                         try
                         {
                             var video = _driver.FindElement(By.XPath("//video[@id='container_html5_api']/source"));
@@ -68,15 +78,20 @@ namespace DownloaderUtil
 			}
                         catch (Exception ex)
                         {
-			    
+			    SendProgress("no html5 video");
 			}
 
 
 			try
 			{
-			    var script = _driver.FindElements(By.TagName("script")).FirstOrDefault(s => s.GetAttribute("innerHTML").Contains("jwplayer('flvplayer').setup(jwConfig({")).GetAttribute("innerHTML");
-			    if(script != null)
+			    var tmp = _driver.FindElements(By.TagName("script")).FirstOrDefault(s => s.GetAttribute("innerHTML").Contains("jwplayer('flvplayer').setup(jwConfig({"));
+			    
+			    if(tmp != null)
 			    {
+				var script = tmp.GetAttribute("innerHTML");
+			    
+				SendProgress("Way 2");
+				
 				script = script.Replace("jwplayer('flvplayer').setup(jwConfig(", string.Empty);
                 		script = script.Replace("));", string.Empty);
                 		script = script.Replace("\"width\" : $(window).width(),", string.Empty);
@@ -87,24 +102,54 @@ namespace DownloaderUtil
 			
 				SendProgress("flash video found in frame: " + i);
 			    	break;
-			    }	
+			    }
+			    else
+			    {
+SendProgress("WAY 3");
+				//script = _driver.FindElements(By.TagName("script")).FirstOrDefault(s => s.GetAttribute("innerHTML").Contains("jwplayer(\"flvplayer\").setup({")).GetAttribute("innerHTML");
+				 tmp =
+                            _driver.FindElements(By.TagName("script"))
+                                .FirstOrDefault(
+                                    s => s.GetAttribute("innerHTML").Contains("jwplayer(\"flvplayer\").setup({"));
+                    		
+				if(tmp != null)
+				{
+				    var script = tmp.GetAttribute("innerHTML");
+
+				    SendProgress("Way 3");
+
+				    foreach (var line in script.Split('\n'))
+                        	    {		
+                            		if (line.Contains("file:"))
+                            		{
+                                	    tmpUrl = line.Replace("file:", string.Empty);
+                                	    tmpUrl = tmpUrl.Replace("\"", string.Empty);
+                                	    tmpUrl = tmpUrl.Replace(",", string.Empty);
+					    tmpUrl = tmpUrl.Replace("\r", string.Empty);
+
+                                	    break;
+                            		}
+                        	    }
+				    
+				    SendProgress("flash video found in frame: " + i);
+			    	    break;
+				}
+				else
+				{
+				    System.IO.File.WriteAllText("jack" + i + ".txt", _driver.PageSource);
+				}
+			    }
+			    	
                         }
 			catch(Exception ex)
 			{
-			    
+			    SendProgress("no flvplayer");
 			}
                         finally
                         {
                             _driver.SwitchTo().DefaultContent();
                         }
-                    }
-
-                    //var frame =  _driver.FindElement(By.XPath("//div[@class='fullwrap']/h1")).FindElement(By.XPath("//center/iframe"));
-                    //_driver.SwitchTo().Frame(frame);
-		    //var video = wait.Until((d) => { return d.FindElement(By.XPath("//video[@id='container_html5_api']/source")); });
-                    //WriteDebug("OK", "OK", driver.TakeScreenshot(), driver.PageSource);
-                    //var video = _driver.FindElement(By.XPath("//video[@id='container_html5_api']/source"));
-                    
+                    }                    
                 }
                 catch (Exception ex)
                 {

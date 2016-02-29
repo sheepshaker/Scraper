@@ -54,8 +54,9 @@ namespace DownloaderUtil
 	    _queue  = new Queue<ScrapeReq>();
 	    
 	    _scrapers = new Dictionary<string, IScraper>();
-	    _scrapers.Add("http://www.kinoman.tv", new KinomanScraper());
-	    _scrapers.Add("http://www.watchseries.li", new WatchSeriesScraper());
+	    _scrapers.Add(KinomanScraper.Key, new KinomanScraper());
+	    _scrapers.Add(WatchSeriesScraper.Key, new WatchSeriesScraper());
+	    _scrapers.Add(WatchFreeScraper.Key, new WatchFreeScraper());
 
 	    foreach(var scraper in _scrapers.Values)
 	    {

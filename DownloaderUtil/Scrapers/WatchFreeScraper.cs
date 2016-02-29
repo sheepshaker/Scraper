@@ -18,6 +18,14 @@ namespace DownloaderUtil
 {
     public sealed class WatchFreeScraper : ScraperBase
     {
+	public static string Key
+	{
+	    get
+	    {
+		return "http://www.watchfree.to";
+	    }
+	}
+ 
 	public override ScrapeDesc Scrape(ScrapeReq scrapeReq)
 	{
     	    if(_driver == null)
@@ -44,14 +52,13 @@ namespace DownloaderUtil
 
 		try
                 {
-                    name += _driver.FindElement(By.XPath("//span[@itemprop='name']")).Text;//GetAttribute("OuterXml");
-                    var seasonData = _driver.FindElements(By.XPath("//span[@class='list-top']/a"));
-                    foreach(var data in seasonData)
-		    {
-		        name += "_" + data.Text;
-		    }
+		    name = _driver.FindElement(By.XPath("//div[@class='body']/div/h1/span/a")).Text;
 
 		    SendProgress("Found Name: " + name);
+		    SendProgress("Clicking...");
+
+                    var videoClick = _driver.FindElement(By.XPath("//div[@class='video_play_button']/a"));
+                    videoClick.Click();
 
 		    var frames = _driver.FindElements(By.TagName("iframe"));
                     
@@ -60,32 +67,18 @@ namespace DownloaderUtil
                         _driver.SwitchTo().Frame(i);
                         //WriteDebug("OK", "OK", driver.TakeScreenshot(), driver.PageSource);
 
-                        try
-                        {
-                            var video = _driver.FindElement(By.XPath("//video[@id='container_html5_api']/source"));
-                    	    tmpUrl = video.GetAttribute("src");
-			    SendProgress("html5 video found in frame: " + i);
-			    break;
-			}
-                        catch (Exception ex)
-                        {
-			    
-			}
-
-
 			try
 			{
-			    var script = _driver.FindElements(By.TagName("script")).FirstOrDefault(s => s.GetAttribute("innerHTML").Contains("jwplayer('flvplayer').setup(jwConfig({")).GetAttribute("innerHTML");
+			    var script = _driver.FindElements(By.TagName("script")).FirstOrDefault(s => s.GetAttribute("innerHTML").Contains("jwplayer(\"vplayer\").setup({")).GetAttribute("innerHTML");
 			    if(script != null)
 			    {
-				script = script.Replace("jwplayer('flvplayer').setup(jwConfig(", string.Empty);
-                		script = script.Replace("));", string.Empty);
-                		script = script.Replace("\"width\" : $(window).width(),", string.Empty);
-                		script = script.Replace("\"height\" : $(window).height(),", string.Empty);
+				script = script.Replace("jwplayer(\"vplayer\").setup(", string.Empty);
+                                var endIndex = script.IndexOf("});");
+                                script = script.Remove(endIndex, script.Length - endIndex);
+                                script += "}";
+                                var json = JObject.Parse(script);
+                                tmpUrl = json["modes"][1]["config"]["file"].ToString();
 
-                		JObject jobject = JObject.Parse(script);
-                		tmpUrl = jobject["playlist"][0]["sources"].OrderByDescending(s => s["label"]).FirstOrDefault()["file"].ToString();
-			
 				SendProgress("flash video found in frame: " + i);
 			    	break;
 			    }	
@@ -98,14 +91,7 @@ namespace DownloaderUtil
                         {
                             _driver.SwitchTo().DefaultContent();
                         }
-                    }
-
-                    //var frame =  _driver.FindElement(By.XPath("//div[@class='fullwrap']/h1")).FindElement(By.XPath("//center/iframe"));
-                    //_driver.SwitchTo().Frame(frame);
-		    //var video = wait.Until((d) => { return d.FindElement(By.XPath("//video[@id='container_html5_api']/source")); });
-                    //WriteDebug("OK", "OK", driver.TakeScreenshot(), driver.PageSource);
-                    //var video = _driver.FindElement(By.XPath("//video[@id='container_html5_api']/source"));
-                    
+                    }                    
                 }
                 catch (Exception ex)
                 {
