@@ -16,6 +16,7 @@
 (function(){
 $.connection.hub.start().done(function () {
                     $('#connectionStatus').text('Connected');
+		    $('#scrapeInput').css('visibility', 'visible');
                     console.log('Now connected, connection ID =' + $.connection.hub.id);
                 });
 })();
@@ -143,13 +144,11 @@ $scope.SecondsTohhmmss = function (totalSeconds) {
 
 <div id="diskSpaceInfo"></div>
 
-<div>
+<div id="scrapeInput" style="visibility: hidden;">
     <p>Url: <input type="text" name="formUrl" ng-model="formUrl" required /></p>
     <button ng-click="AddScrape()">Submit</button>
     <!--<button ng-click="AddDirectScrape()">Submit Direct</button>-->
     <hr/>
-</div>
-<div>
     <button ng-click="DeleteAllScrapes()">Delete all</button>
     <hr/>
 </div>

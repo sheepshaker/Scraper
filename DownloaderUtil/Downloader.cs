@@ -194,8 +194,15 @@ namespace DownloaderUtil
 	    }
 	    else
 	    {
-	    	File.Move(scrapeDesc.FilePath, OutputPath + "//" + scrapeDesc.Name + ".mp4");
-		DownloadCompleted?.Invoke(this, new DownloadEventArgs{ScrapeDesc = scrapeDesc});
+		try	
+		{
+	    	    File.Move(scrapeDesc.FilePath, OutputPath + "//" + scrapeDesc.Name + ".mp4");
+		    DownloadCompleted?.Invoke(this, new DownloadEventArgs{ScrapeDesc = scrapeDesc});
+		}
+		catch(Exception ex)
+		{
+		    DownloadError?.Invoke(this, new MessageEventArgs{ScrapeDesc = scrapeDesc, Message=ex.ToString()});
+		}		
 	    }
 	    
 	    scrapeDesc.Stopwatch.Stop();
